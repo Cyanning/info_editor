@@ -56,11 +56,11 @@ class MainWindow(QMainWindow):
     def __setup_menubar(self):
         self.menuitems['upload'] = QAction("同步到共享")
         self.menuitems['upload'].setIcon(QIcon("cache/upload.png"))
-        self.menuitems['upload'].triggered.connect(self.upload_share_database)
+        # self.menuitems['upload'].triggered.connect(self.upload_share_database)
 
         self.menuitems['download'] = QAction("同步到本地")
         self.menuitems['download'].setIcon(QIcon("cache/download.png"))
-        self.menuitems['download'].triggered.connect(self.download_share_database)
+        # self.menuitems['download'].triggered.connect(self.download_share_database)
 
         self.menuitems['clean_db'] = QAction("清理数据库")
         self.menuitems['clean_db'].setIcon(QIcon("cache/delete.png"))
