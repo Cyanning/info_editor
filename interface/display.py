@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
-from main import *
+from model.bodyfactory import *
 
 
 class DisplayWindow(QWidget):

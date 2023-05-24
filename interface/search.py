@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import *
-from main import *
+from model.bodyfactory import *
 
 
 class SearchWindow(QDialog):

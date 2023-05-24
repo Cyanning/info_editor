@@ -4,9 +4,6 @@ from model.bodymodel import *
 from configuration import *
 
 
-SYSTEMS = ['全部', '骨骼', '结缔', '肌肉', '动脉', '静脉', '淋巴', '神经', '呼吸', '消化', '内分泌', '泌尿生殖', '皮肤']
-
-
 def write_cache_model(num: int):
     """写退出时的模型id"""
     with open(RTPATH + "cache/periousValue.dll", 'w', encoding='UTF-8') as w:
@@ -116,7 +113,7 @@ def saving_model(model: BodyModel):
     try:
         assert len(model) > 0
         # 读取已存在的关系
-        cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d" % model.value)
+        cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY " % model.value)
         sentence_exists = [x[0] for x in cur.fetchall()]
         # 循环存储
         for sentence in model:
@@ -167,8 +164,8 @@ def export_database_to_json(target_path):
     cur.execute("SELECT text_hash,context FROM attribution")
     data = {"attribution": [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]}
 
-    cur.execute("SELECT text_hash,model_value FROM ia_connect")
-    data["ia_connect"] = [{"text_hash": row[0], "model_value": row[1]} for row in cur.fetchall()]
+    cur.execute("SELECT text_hash,model_value,order_id FROM ia_connect")
+    data["ia_connect"] = [{"text_hash": row[0], "model_value": row[1], "order_id": row[2]} for row in cur.fetchall()]
 
     for name, jsonobj in data.items():
         jsonstr = json.dumps(jsonobj, ensure_ascii=False)

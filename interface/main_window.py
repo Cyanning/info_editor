@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from interface import preview, search, display
-from main import *
+from model.bodyfactory import *
 
 
 class MainWindow(QMainWindow):
