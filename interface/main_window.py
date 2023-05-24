@@ -58,8 +58,9 @@ class MainWindow(QMainWindow):
         # 显示模型名字
         self.widgets['name'] = QLineEdit("模型名字")
         self.widgets['name'].setReadOnly(True)
-        self.widgets['name'].setAlignment(Qt.AlignmentFlag.AlignVCenter)
         self.widgets['name'].setTextMargins(10, 0, 0, 0)
+        self.widgets['name'].setStyleSheet("border: none;")
+        self.widgets['name'].setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         # 导出当前数据
         self.widgets['export'] = QPushButton("导出数据")
