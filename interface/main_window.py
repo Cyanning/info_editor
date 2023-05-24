@@ -2,7 +2,7 @@ from collections import OrderedDict
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
-from assistInterface import DisplayWindow, SearchWindow, PreviewWindow
+from interface import preview, search, display
 from main import *
 
 
@@ -10,26 +10,20 @@ class MainWindow(QMainWindow):
     def __init__(self):
         # 窗口设置
         super().__init__(None)
-        self.setGeometry(*self.init_size())
+        self.__init_size()
         self.setWindowTitle("信息编辑器")
-        self.setWindowIcon(QIcon("cache/icon.png"))
+        self.setWindowIcon(QIcon(RTPATH + "cache/icon.png"))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.menuitems = OrderedDict()  # 菜单
         self.widgets = OrderedDict()  # 组件
-        self.assist_window = DisplayWindow(self.x(), self.y(), self.height())  # 辅助窗口
-
-        # 菜单栏容器
-        self.__setup_menubar()
-        my_menu = self.menuBar().addMenu("设置")
-        for key in self.menuitems:
-            my_menu.addAction(self.menuitems[key])
+        self.assist_window = display.DisplayWindow(self.height())  # 辅助窗口
 
         # 主界面布局
-        self.__setup_main()
+        self.__setup_interface()
         layout_rows = [QHBoxLayout() for _ in range(4)]  # 每行一个布局器
         for key in self.widgets:
             match key:
-                case 'modelid' | 'name' | 'save':
+                case 'modelid' | 'name' | 'export' | 'save':
                     layout_rows[0].addWidget(self.widgets[key])
 
                 case 'jump' | 'pervious' | 'next' | 'search':
@@ -53,37 +47,27 @@ class MainWindow(QMainWindow):
         self.model = load_cache_model()
         self.load_model()
 
-    def __setup_menubar(self):
-        self.menuitems['upload'] = QAction("同步到共享")
-        self.menuitems['upload'].setIcon(QIcon("cache/upload.png"))
-        # self.menuitems['upload'].triggered.connect(self.upload_share_database)
-
-        self.menuitems['download'] = QAction("同步到本地")
-        self.menuitems['download'].setIcon(QIcon("cache/download.png"))
-        # self.menuitems['download'].triggered.connect(self.download_share_database)
-
-        self.menuitems['clean_db'] = QAction("清理数据库")
-        self.menuitems['clean_db'].setIcon(QIcon("cache/delete.png"))
-        self.menuitems['clean_db'].triggered.connect(self.clean_unusable_of_attribution)
-
-        self.menuitems['quit'] = QAction("退出")
-        self.menuitems['quit'].setIcon(QIcon("cache/quit.png"))
-        self.menuitems['quit'].triggered.connect(self.closeEvent)
-
-    def __setup_main(self):
+    def __setup_interface(self):
         # 模型id输入\显示
         self.widgets['modelid'] = QSpinBox(None)
         self.widgets['modelid'].setMinimumWidth(100)
         self.widgets['modelid'].setMinimum(100000)
         self.widgets['modelid'].setMaximum(2119999)
+        self.widgets['modelid'].setAlignment(Qt.AlignmentFlag.AlignRight)
 
         # 显示模型名字
         self.widgets['name'] = QLineEdit("模型名字")
         self.widgets['name'].setReadOnly(True)
-        self.widgets['name'].setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.widgets['name'].setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        self.widgets['name'].setTextMargins(10, 0, 0, 0)
+
+        # 导出当前数据
+        self.widgets['export'] = QPushButton("导出数据")
+        self.widgets['export'].clicked.connect(self.export_database)
+        self.widgets['export'].setMinimumWidth(100)
 
         # 保存当前数据
-        self.widgets['save'] = QPushButton("保 存")
+        self.widgets['save'] = QPushButton("保  存")
         self.widgets['save'].clicked.connect(self.save_info)
         self.widgets['save'].setMinimumWidth(100)
 
@@ -130,7 +114,7 @@ class MainWindow(QMainWindow):
         # 批量设置字体
         font = self.font()
         font.setPointSize(12)
-        for key in ('modelid', 'name', 'save'):
+        for key in ('modelid', 'name', 'save', 'export'):
             self.widgets[key].setFont(font)
 
         font.setPointSize(10)
@@ -141,12 +125,20 @@ class MainWindow(QMainWindow):
         for key in self.widgets:
             self.widgets[key].setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
+    def __init_size(self):
+        """
+        初始坐标，初始尺寸
+        """
+        desk = QApplication.primaryScreen().geometry()
+        w = desk.width()
+        h = desk.height()
+        size = [w / 2 - 400, h / 2 - 300, w * 0.4, h * 0.55]
+        self.setGeometry(*map(int, size))
+
     def load_model(self):
         """
         载入模型数据
         """
-        if self.assist_window.isVisible():
-            self.assist_window.display_info(self.model)
         self.widgets['name'].setText(self.model.name)
         self.widgets['modelid'].setValue(self.model.value)
         self.widgets['info'].setPlainText(self.model.paragraph)
@@ -268,7 +260,7 @@ class MainWindow(QMainWindow):
                 model_item.convert_for_paragraph()
                 models.append(model_item)
 
-            agree_preview = PreviewWindow(models, self)
+            agree_preview = preview.PreviewWindow(models, self)
             if agree_preview.exec():
                 for model_item in models:
                     saving_model(model_item)
@@ -286,59 +278,11 @@ class MainWindow(QMainWindow):
         keywords = self.model.name
         if keywords[-1] == '）':
             keywords = keywords[:keywords.index('（')]
-        popup = SearchWindow(keywords, parent=self, multi_mode=multi)
+        popup = search.SearchWindow(keywords, parent=self, multi_mode=multi)
         popup.exec()
         modelvals = popup.get_selected_models
         assert len(modelvals)
         return modelvals if multi else modelvals[0]
-
-    def clean_unusable_of_attribution(self):
-        """
-        清理数据句子表
-        """
-        try:
-            answer = QMessageBox().question(
-                self, "再次确认", "此行为将会清理没有关联上任何模型的信息。\n\n确定要清理数据库？")
-            assert answer == QMessageBox().StandardButton.Yes
-            clean_table_of_attribution()
-        except AssertionError:
-            pass
-        except Exception as e:
-            QMessageBox().critical(self, "错误", f"清理失败！\n原因：{e}")
-        else:
-            QMessageBox().information(self, "Good", "清理成功！")
-
-    def upload_share_database(self):
-        """
-        上传
-        """
-        try:
-            answer = QMessageBox().question(
-                self, "再次确认", "同步到共享是指将本地数据上传到\n共享数据库，不会删除本地文件。\n\n确定要同步到共享？")
-            if answer == QMessageBox().StandardButton.Yes:
-                num = sync_share_database(True)
-            else:
-                return
-        except Exception as e:
-            QMessageBox().critical(self, "错误", f"上传失败！\n原因：{e}")
-        else:
-            QMessageBox().information(self, "Good", "成功上传%d条数据！" % num)
-
-    def download_share_database(self):
-        """
-        下载
-        """
-        try:
-            answer = QMessageBox().question(
-                self, "再次确认", "同步到本地是指将共享数据下载到\n本地数据库，不会删除本地文件。\n\n确定要同步到本地？")
-            if answer == QMessageBox().StandardButton.Yes:
-                num = sync_share_database(False)
-            else:
-                return
-        except Exception as e:
-            QMessageBox().critical(self, "错误", f"下载失败！\n原因：{e}")
-        else:
-            QMessageBox().information(self, "Good", "成功下载%d条数据！" % num)
 
     def show_oldinfo_context(self):
         """
@@ -347,16 +291,34 @@ class MainWindow(QMainWindow):
         if self.assist_window.isVisible():
             self.assist_window.hide()
         else:
-            self.assist_window.display_info(self.model)
+            self.assist_window.display_info(self.model, self.x(), self.y())
             self.assist_window.show()
+
+    def export_database(self):
+        try:
+            filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
+            export_database_to_json(filepath)
+        except Exception as e:
+            QMessageBox().critical(self, "错误", f"导出数据发生错误。\n错误原因：\n{e}")
+        else:
+            QMessageBox().information(self, "Good", "导出成功！")
 
     def closeEvent(self, event: QCloseEvent):
         """
         重写窗口关闭事件
         """
-        del self.assist_window
-        write_cache_model(self.model.value)
-        event.accept()
+        sure = QMessageBox(self)
+        sure.setIcon(QMessageBox.Icon.Warning)
+        sure.setWindowTitle("Quit?")
+        sure.setText("退出前确认是否保存。\n确认退出？\n")
+        sure.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        sure.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if sure.exec() == QMessageBox.StandardButton.Ok:
+            del self.assist_window
+            write_cache_model(self.model.value)
+            event.accept()
+        else:
+            event.ignore()
 
     def keyPressEvent(self, event):
         """
@@ -372,14 +334,3 @@ class MainWindow(QMainWindow):
 
             case Qt.Key.Key_Right:
                 self.next_model()
-
-    @staticmethod
-    def init_size() -> Iterable:
-        """
-        :return:返回符合Geometry函数格式的初始坐标，初始尺寸
-        """
-        desk = QApplication.primaryScreen().geometry()
-        w = desk.width()
-        h = desk.height()
-        size = [w / 2 - 400, h / 2 - 300, w * 0.4, h * 0.55]
-        return map(int, size)

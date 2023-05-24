@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from sentence import *
+from model.sentence import *
 
 
 class BodyModel:

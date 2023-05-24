@@ -1,20 +1,22 @@
+import json
 import sqlite3
-from bodymodel import *
+from model.bodymodel import *
+from configuration import *
 
-MODELID_PATH = "cache/periousValue.dll"
+
 SYSTEMS = ['全部', '骨骼', '结缔', '肌肉', '动脉', '静脉', '淋巴', '神经', '呼吸', '消化', '内分泌', '泌尿生殖', '皮肤']
 
 
 def write_cache_model(num: int):
     """写退出时的模型id"""
-    with open(MODELID_PATH, 'w', encoding='UTF-8') as w:
+    with open(RTPATH + "cache/periousValue.dll", 'w', encoding='UTF-8') as w:
         w.write(str(num))
 
 
 def load_cache_model() -> BodyModel:
     """读退出时的模型id"""
     try:
-        with open(MODELID_PATH, 'r', encoding='UTF-8') as f:
+        with open(RTPATH + "cache/periousValue.dll", 'r', encoding='UTF-8') as f:
             strings = f.read().strip()
             value = int(strings)
             return create_by_value(value)
@@ -23,12 +25,7 @@ def load_cache_model() -> BodyModel:
 
 
 def open_database():
-    database = sqlite3.connect(r"cache\creature.db")
-    return database, database.cursor()
-
-
-def open_share_database():
-    database = sqlite3.connect(r"\\192.168.3.110\share\解剖\Database\creature.db")
+    database = sqlite3.connect(RTPATH + "cache/creature.db")
     return database, database.cursor()
 
 
@@ -136,54 +133,14 @@ def saving_model(model: BodyModel):
             cur.execute("INSERT INTO ia_connect (model_value,text_hash) VALUES (?,?)", (model.value, hashtext))
 
         # 删除已存在关系中剩余的无用关系
-        cur.executemany("DELETE FROM ia_connect WHERE model_value=? AND text_hash=?",
-                        ((model.value, x) for x in sentence_exists))
+        cur.executemany(
+            "DELETE FROM ia_connect WHERE model_value=? AND text_hash=?", ((model.value, x) for x in sentence_exists)
+        )
     except AssertionError:
         cur.execute("DELETE FROM ia_connect WHERE model_value=%d" % model.value)
     finally:
         db.commit()
         db.close()
-
-
-def clean_table_of_attribution():
-    """
-    清除句子表中无用的句子
-    """
-    db, cur = open_database()
-    cur.execute("""
-        DELETE FROM attribution WHERE text_hash IN (
-        SELECT attribution.text_hash FROM attribution LEFT JOIN ia_connect 
-        ON attribution.text_hash=ia_connect.text_hash WHERE ia_connect.text_hash IS NULL)""")
-    db.commit()
-    db.close()
-
-
-def sync_share_database(up_down: bool):
-    """
-    上传或下载数据
-    :param up_down: T 上传；F下载
-    """
-    if up_down:
-        clean_table_of_attribution()  # 清理冗余数据
-        db_out, cur_out = open_database()
-        db_in, cur_in = open_share_database()
-    else:
-        db_out, cur_out = open_share_database()
-        db_in, cur_in = open_database()
-
-    inserted_sum = 0  # 统计插入的数据
-    for table, *field in (('attribution', 'context', 'text_hash'), ('ia_connect', 'model_value', 'text_hash')):
-        cur_out.execute(f"SELECT {','.join(field)} FROM {table}")
-        for content in cur_out.fetchall():
-            cur_in.execute(f"SELECT COUNT(*) FROM {table} WHERE {' AND '.join(x + '=?' for x in field)}", content)
-            if cur_in.fetchone()[0] == 0:
-                cur_in.execute(f"INSERT INTO {table} ({','.join(field)}) VALUES (?,?)", content)
-                inserted_sum += 1
-                db_in.commit()
-
-    db_in.close()
-    db_out.close()
-    return inserted_sum
 
 
 def get_old_info(value: int) -> str:
@@ -200,3 +157,20 @@ def get_old_info(value: int) -> str:
     assert context is not None
     context.strip()
     return context
+
+
+def export_database_to_json(target_path):
+    """
+    把数据库数据导出为json文件
+    """
+    db, cur = open_database()
+    cur.execute("SELECT text_hash,context FROM attribution")
+    data = {"attribution": [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]}
+
+    cur.execute("SELECT text_hash,model_value FROM ia_connect")
+    data["ia_connect"] = [{"text_hash": row[0], "model_value": row[1]} for row in cur.fetchall()]
+
+    for name, jsonobj in data.items():
+        jsonstr = json.dumps(jsonobj, ensure_ascii=False)
+        with open(f"{target_path}/{name}.json", 'w', encoding='UTF-8') as f:
+            f.write(jsonstr)
