@@ -50,27 +50,25 @@ class MainWindow(QMainWindow):
     def __setup_interface(self):
         # 模型id输入\显示
         self.widgets['modelid'] = QSpinBox(None)
-        self.widgets['modelid'].setMinimumWidth(100)
         self.widgets['modelid'].setMinimum(100000)
         self.widgets['modelid'].setMaximum(2119999)
         self.widgets['modelid'].setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.widgets['modelid'].setFixedWidth(100)
 
         # 显示模型名字
         self.widgets['name'] = QLineEdit("模型名字")
         self.widgets['name'].setReadOnly(True)
-        self.widgets['name'].setTextMargins(10, 0, 0, 0)
+        self.widgets['name'].setFixedWidth(self.width() // 2)
         self.widgets['name'].setStyleSheet("border: none;")
         self.widgets['name'].setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         # 导出当前数据
         self.widgets['export'] = QPushButton("导出数据")
         self.widgets['export'].clicked.connect(self.export_database)
-        self.widgets['export'].setMinimumWidth(100)
 
         # 保存当前数据
         self.widgets['save'] = QPushButton("保  存")
         self.widgets['save'].clicked.connect(self.save_info)
-        self.widgets['save'].setMinimumWidth(100)
 
         # 跳转指定id的模型
         self.widgets['jump'] = QPushButton("跳转")
@@ -114,16 +112,17 @@ class MainWindow(QMainWindow):
 
         # 批量设置字体
         font = self.font()
-        font.setPointSize(12)
-        for key in ('modelid', 'name', 'save', 'export'):
-            self.widgets[key].setFont(font)
-
-        font.setPointSize(10)
-        for key in ('info', 'sentence'):
-            self.widgets[key].setFont(font)
-
-        # 批量设置焦点策略
+        font.setFamily(UI_FONTFAMILY)
+        font.setPointSize(UI_FONTSIZE)
         for key in self.widgets:
+            match key:
+                case 'name' | 'save':
+                    font.setBold(True)
+                    self.widgets[key].setFont(font)
+                    font.setBold(False)
+                case _:
+                    self.widgets[key].setFont(font)
+            # 设置焦点策略
             self.widgets[key].setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
     def __init_size(self):
@@ -131,16 +130,15 @@ class MainWindow(QMainWindow):
         初始坐标，初始尺寸
         """
         desk = QApplication.primaryScreen().geometry()
-        w = desk.width()
-        h = desk.height()
-        size = [w / 2 - 400, h / 2 - 300, w * 0.4, h * 0.55]
-        self.setGeometry(*map(int, size))
+        w, h = desk.width(), desk.height()
+        size = map(int, [w / 4, h / 2 - w / 6, w / 2, w / 3])
+        self.setGeometry(*size)
 
     def load_model(self):
         """
         载入模型数据
         """
-        self.widgets['name'].setText(self.model.name)
+        self.widgets['name'].setText(genders[self.model.gender] + self.model.name)
         self.widgets['modelid'].setValue(self.model.value)
         self.widgets['info'].setPlainText(self.model.paragraph)
         self.display_sentences_list()
@@ -199,6 +197,8 @@ class MainWindow(QMainWindow):
         """
         保存信息（以句子为准）
         """
+        if not self.warning("Confirm save?", "确定以当前所填内容保存吗？"):
+            return
         try:
             self.model.paragraph = self.widgets['info'].toPlainText()
             saving_model_basedon_paragraph(self.model)
@@ -216,22 +216,9 @@ class MainWindow(QMainWindow):
         """
         try:
             value = self.search_model(False)
-            question = QMessageBox()
-            question.setWindowTitle("添加其他信息")
-            question.setText("选择信息来源。")
-            question.addButton("新编辑的信息", QMessageBox().ButtonRole.ActionRole)
-            question.addButton("CA上的信息", QMessageBox().ButtonRole.ActionRole)
-            question.setStyleSheet("QPushButton {width: 100px; height: 20px}")
-            match question.exec():
-                case 0:
-                    # 第0个按钮，从新数据表加载
-                    sentences = produce_sentences_by_value(value)
-                    self.model.add_into_paragraph(sentences)
-                    self.widgets['info'].appendPlainText(self.model.paragraph)
-                case 1:
-                    # 第1个按钮，从老信息字段加载
-                    paragraph = get_old_info(value)
-                    self.widgets['info'].appendPlainText(paragraph)
+            sentences = produce_sentences_by_value(value)
+            self.model.add_into_paragraph(sentences)
+            self.widgets['info'].appendPlainText(self.model.paragraph)
         except AssertionError:
             QMessageBox().warning(self, "警告", "没有信息可以被添加。")
         except Exception as e:
@@ -308,13 +295,7 @@ class MainWindow(QMainWindow):
         """
         重写窗口关闭事件
         """
-        sure = QMessageBox(self)
-        sure.setIcon(QMessageBox.Icon.Warning)
-        sure.setWindowTitle("Quit?")
-        sure.setText("退出前确认是否保存。\n确认退出？\n")
-        sure.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-        sure.setDefaultButton(QMessageBox.StandardButton.Cancel)
-        if sure.exec() == QMessageBox.StandardButton.Ok:
+        if self.warning("Confirm quit?", "退出前确认是否保存。\n确认退出？\n"):
             del self.assist_window
             write_cache_model(self.model.value)
             event.accept()
@@ -335,3 +316,21 @@ class MainWindow(QMainWindow):
 
             case Qt.Key.Key_Right:
                 self.next_model()
+
+    def warning(self, tittle: str, context: str) -> bool:
+        sure = QMessageBox(self)
+        font = self.font()
+        font.setPointSize(UI_FONTSIZE)
+        font.setFamily(UI_FONTFAMILY)
+        sure.setFont(font)
+        sure.setIcon(QMessageBox.Icon.Warning)
+        sure.setWindowTitle(tittle)
+        sure.setText(context)
+        sure.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        sure.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        flag = sure.exec() == QMessageBox.StandardButton.Ok
+        return flag
+
+    def resizeEvent(self, event: QResizeEvent):
+        self.widgets['name'].setFixedWidth(self.width() // 2)
+        super().resizeEvent(event)

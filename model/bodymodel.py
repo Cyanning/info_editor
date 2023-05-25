@@ -1,9 +1,8 @@
-from collections.abc import Iterable
 from model.sentence import *
 
 
 class BodyModel:
-    def __init__(self, value: int, name: str, context: Iterable):
+    def __init__(self, value: int, name: str, context):
         """
         :param value: 模型id
         :param context: 信息内容
@@ -32,6 +31,23 @@ class BodyModel:
         return any((x == item for x in self._sentences))
 
     @property
+    def gender(self) -> int:
+        if self.value >= 1000000:
+            val = self.value // 10000
+        else:
+            val = self.value // 1000
+        val %= 10
+        return val
+
+    @property
+    def value_(self):
+        if self.value < 1000000:
+            val = "%d " % self.value
+        else:
+            val = str(self.value)
+        return val
+
+    @property
     def paragraph(self):
         return self._paragraph
 
@@ -49,23 +65,23 @@ class BodyModel:
         """
         self._sentences.clear()
 
-    def add_into_paragraph(self, contexts: Iterable[Sentence] | str):
+    def add_into_paragraph(self, context):
         """
         contexts: 为包含句子对象的可迭代对象，则从句子对象中添加文字到段落；
         为字符串则直接在段落后衔接内容
         """
-        if type(contexts) == str:
-            self._paragraph += f"\n{contexts.strip()}"
+        if type(context) == str:
+            self._paragraph += f"\n{context.strip()}"
         else:
-            for new in contexts:
+            for new in context:
                 if new.value not in self._paragraph:
                     self._paragraph += f"\n{new.value}。\n"
 
-    def add_into_sentences(self, contexts: Iterable[Sentence]):
+    def add_into_sentences(self, context):
         """
         添加多个句子对象
         """
-        for new in contexts:
+        for new in context:
             for old in self._sentences:
                 if new == old:
                     break

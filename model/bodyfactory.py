@@ -35,9 +35,16 @@ def create_by_value(value: int) -> BodyModel:
     res = cur.fetchone()
     assert res is not None
     name = res[0]
-    cur.execute("SELECT context FROM attribution WHERE text_hash IN ("
-                "SELECT text_hash FROM ia_connect WHERE model_value=%d)" % value)
-    model = BodyModel(value, name, (x[0] for x in cur.fetchall()))
+    cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY order_id" % value)
+    sentence_hashes = [x[0] for x in cur.fetchall()]
+    sentences = []
+    for sentence_hash in sentence_hashes:
+        cur.execute("SELECT context FROM attribution WHERE text_hash='%s'" % sentence_hash)
+        try:
+            sentences.append(cur.fetchone()[0])
+        except (TypeError, IndexError):
+            continue
+    model = BodyModel(value, name, sentences)
     db.close()
     return model
 
@@ -73,7 +80,7 @@ def create_next_value(value: int, direction: int) -> BodyModel:
 
 def produce_by_search(kws: str, sysid: int | None) -> BodyModel:
     """
-    根据关键词和系统限定，搜索并生成模型
+    根据关键词和系统限定，搜索并生成模型，无句子信息
     """
     db, cur = open_database()
     sys_sql = '' if sysid is None else f" AND sysid={sysid}"
@@ -89,10 +96,13 @@ def produce_sentences_by_value(value: int) -> list[Sentence]:
     基于模型vlaue载入所有关联的句子
     """
     db, cur = open_database()
-    cur.execute("SELECT context FROM attribution WHERE text_hash IN ("
-                "SELECT text_hash FROM ia_connect WHERE model_value=%d)" % value)
-    for row in cur.fetchall():
-        yield Sentence(row[0])
+    cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY order_id" % value)
+    for thash in (x[0] for x in cur.fetchall()):
+        cur.execute("SELECT context FROM attribution WHERE text_hash='%s'" % thash)
+        try:
+            yield Sentence(cur.fetchone()[0])
+        except (TypeError, IndexError):
+            continue
     db.close()
 
 
@@ -100,41 +110,44 @@ def saving_model_basedon_paragraph(model: BodyModel):
     try:
         model.convert_into_sentences()
     except AssertionError:
-        # 依据断言判断出为空白内容, 删除所有关系
+        # 依据断言判断出为空白内容, 删除所有句子
         model.clean_sentences()
     saving_model(model)
 
 
-def saving_model(model: BodyModel):
+def saving_model(body: BodyModel):
     """
     保存一个模型的所有关系
     """
     db, cur = open_database()
     try:
-        assert len(model) > 0
+        assert len(body) > 0
         # 读取已存在的关系
-        cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY " % model.value)
+        cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d" % body.value)
         sentence_exists = [x[0] for x in cur.fetchall()]
         # 循环存储
-        for sentence in model:
+        for i, sentence in enumerate(body):
             hashtext = sentence.gethash
+            # 判断关系是否已存在
             if hashtext in sentence_exists:
-                # 判断是否需要新加关系
                 sentence_exists.remove(hashtext)
                 continue
-            # 先判断句子存不存在，再存句子
+            # 先判断如果句子不存在，才存句子
             cur.execute("SELECT COUNT(*) FROM attribution WHERE text_hash='%s'" % hashtext)
             if cur.fetchone()[0] == 0:
                 cur.execute("INSERT INTO attribution (context,text_hash) VALUES (?,?)", (sentence.value, hashtext))
             # 存关系
-            cur.execute("INSERT INTO ia_connect (model_value,text_hash) VALUES (?,?)", (model.value, hashtext))
+            cur.execute(
+                "INSERT INTO ia_connect (model_value,text_hash,order_id) VALUES (?,?,?)", (body.value, hashtext, i)
+            )
 
         # 删除已存在关系中剩余的无用关系
         cur.executemany(
-            "DELETE FROM ia_connect WHERE model_value=? AND text_hash=?", ((model.value, x) for x in sentence_exists)
+            "DELETE FROM ia_connect WHERE model_value=? AND text_hash=?", ((body.value, x) for x in sentence_exists)
         )
     except AssertionError:
-        cur.execute("DELETE FROM ia_connect WHERE model_value=%d" % model.value)
+        cur.execute("DELETE FROM ia_connect WHERE model_value=%d" % body.value)
+        # 删除所有关联
     finally:
         db.commit()
         db.close()

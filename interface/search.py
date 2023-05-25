@@ -50,11 +50,15 @@ class SearchWindow(QDialog):
 
     def set_style(self):
         font = self.font()
-        font.setPointSize(10)
+        font.setPointSize(UI_FONTSIZE)
+        font.setFamily(UI_FONTFAMILY)
         self.search_text.setFont(font)
+        self.search_push.setFont(font)
         self.system_list.setFont(font)
+        self.sure_push.setFont(font)
+
+        font.setFamily("黑体")
         self.result_list.setFont(font)
-        self.system_list.setFont(font)
 
     def search_model(self):
         keystring = self.search_text.text()
@@ -69,7 +73,7 @@ class SearchWindow(QDialog):
         self.result.clear()
         self.result_list.clear()
         self.result = [*produce_by_search(keystring, keysysid)]
-        self.result_list.addItems(("{:<8d}{}".format(x.value, x.name) for x in self.result))
+        self.result_list.addItems((f"{genders[x.gender]} {x.value_} { x.name}" for x in self.result))
 
     @property
     def get_selected_models(self):

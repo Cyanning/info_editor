@@ -12,11 +12,15 @@ class PreviewWindow(QDialog):
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setMinimumWidth(1050 if len(models) > 4 else len(models) * 250 + 50)
+
         widget = QWidget(scroll)
         gbox = QGridLayout(widget)
-
+        font = self.font()
+        font.setPointSize(10)
+        font.setFamily("黑体")
         for i in range(0, len(models)):
             textarea = QLabel()
+            textarea.setFont(font)
             textarea.setWordWrap(True)
             textarea.setText(f"{models[i].value} {models[i].name}\n\n{models[i].paragraph}")
             textarea.setMinimumWidth(250)
