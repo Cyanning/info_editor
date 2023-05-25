@@ -44,11 +44,11 @@ class SearchWindow(QDialog):
         layout.addLayout(bottom)
 
         self.setLayout(layout)
-        self.set_style()
+        self._style()
         self.search_text.setText(init_keyword)
         self.search_model()
 
-    def set_style(self):
+    def _style(self):
         font = self.font()
         font.setPointSize(UI_FONTSIZE)
         font.setFamily(UI_FONTFAMILY)

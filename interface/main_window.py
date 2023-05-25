@@ -2,7 +2,7 @@ from collections import OrderedDict
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
-from interface import preview, search, display
+from interface import preview, search, display, datapanel
 from model.bodyfactory import *
 
 
@@ -63,8 +63,8 @@ class MainWindow(QMainWindow):
         self.widgets['name'].setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         # 导出当前数据
-        self.widgets['export'] = QPushButton("导出数据")
-        self.widgets['export'].clicked.connect(self.export_database)
+        self.widgets['export'] = QPushButton("管理数据")
+        self.widgets['export'].clicked.connect(self.management_database)
 
         # 保存当前数据
         self.widgets['save'] = QPushButton("保  存")
@@ -282,14 +282,9 @@ class MainWindow(QMainWindow):
             self.assist_window.display_info(self.model, self.x(), self.y())
             self.assist_window.show()
 
-    def export_database(self):
-        try:
-            filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
-            export_database_to_json(filepath)
-        except Exception as e:
-            QMessageBox().critical(self, "错误", f"导出数据发生错误。\n错误原因：\n{e}")
-        else:
-            QMessageBox().information(self, "Good", "导出成功！")
+    def management_database(self):
+        manager = datapanel.DatePanel()
+        manager.exec()
 
     def warning(self, tittle: str, context: str) -> bool:
         font = self.font()
@@ -311,7 +306,7 @@ class MainWindow(QMainWindow):
         重写窗口关闭事件
         """
         if self.warning("Confirm quit?", "退出前确认是否保存。\n确认退出？\n"):
-            del self.assist_window
+            # del self.assist_window
             write_cache_model(self.model.value)
             event.accept()
         else:

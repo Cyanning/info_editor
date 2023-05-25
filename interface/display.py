@@ -15,9 +15,9 @@ class DisplayWindow(QWidget):
         layout.addWidget(self.lab)
         layout.addWidget(self.browser)
         self.setLayout(layout)
-        self.__set_style()
+        self._style()
 
-    def __set_style(self):
+    def _style(self):
         font = self.font()
         font.setPointSize(12)
         self.lab.setFont(font)
