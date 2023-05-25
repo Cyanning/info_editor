@@ -292,10 +292,11 @@ class MainWindow(QMainWindow):
             QMessageBox().information(self, "Good", "导出成功！")
 
     def warning(self, tittle: str, context: str) -> bool:
-        sure = QMessageBox(self)
         font = self.font()
         font.setPointSize(UI_FONTSIZE)
         font.setFamily(UI_FONTFAMILY)
+
+        sure = QMessageBox(self)
         sure.setFont(font)
         sure.setIcon(QMessageBox.Icon.Warning)
         sure.setWindowTitle(tittle)

@@ -120,37 +120,42 @@ def saving_model(body: BodyModel):
     保存一个模型的所有关系
     """
     db, cur = open_database()
-    try:
-        assert len(body) > 0
-        # 读取已存在的关系
-        cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d" % body.value)
-        sentence_exists = [x[0] for x in cur.fetchall()]
-        # 循环存储
-        for i, sentence in enumerate(body):
-            hashtext = sentence.gethash
-            # 判断关系是否已存在
-            if hashtext in sentence_exists:
-                sentence_exists.remove(hashtext)
-                continue
-            # 先判断如果句子不存在，才存句子
-            cur.execute("SELECT COUNT(*) FROM attribution WHERE text_hash='%s'" % hashtext)
-            if cur.fetchone()[0] == 0:
-                cur.execute("INSERT INTO attribution (context,text_hash) VALUES (?,?)", (sentence.value, hashtext))
-            # 存关系
-            cur.execute(
-                "INSERT INTO ia_connect (model_value,text_hash,order_id) VALUES (?,?,?)", (body.value, hashtext, i)
-            )
+    # 读取已存在的关系
+    cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY order_id" % body.value)
+    hash_exists = [x[0] for x in cur.fetchall()]
+    idxes_excluded = set()
 
-        # 删除已存在关系中剩余的无用关系
-        cur.executemany(
-            "DELETE FROM ia_connect WHERE model_value=? AND text_hash=?", ((body.value, x) for x in sentence_exists)
+    # 循环存储每个句子
+    for idx_now, sentence in enumerate(body):
+        hash_now = sentence.gethash
+        # 判断关系是否已存在
+        if hash_now in hash_exists:
+            idx_exists = hash_exists.index(hash_now)
+            # 如果顺序有变动则更改序号
+            if idx_exists != idx_now:
+                cur.execute(
+                    "UPDATE ia_connect SET order_id=? WHERE model_value=? AND text_hash=?",
+                    (idx_now, body.value, hash_now)
+                )
+            # 记录需要保留的已存在句子
+            idxes_excluded.add(idx_exists)
+            continue
+        # 判断句子是否存在, 不存在就存句子
+        cur.execute("SELECT COUNT(*) FROM attribution WHERE text_hash='%s'" % hash_now)
+        if cur.fetchone()[0] == 0:
+            cur.execute("INSERT INTO attribution (context,text_hash) VALUES (?,?)", (sentence.value, hash_now))
+        # 存关系
+        cur.execute(
+            "INSERT INTO ia_connect (model_value,text_hash,order_id) VALUES (?,?,?)", (body.value, hash_now, idx_now)
         )
-    except AssertionError:
-        cur.execute("DELETE FROM ia_connect WHERE model_value=%d" % body.value)
-        # 删除所有关联
-    finally:
-        db.commit()
-        db.close()
+
+    # 删除无关联的句子关系
+    cur.executemany(
+        "DELETE FROM ia_connect WHERE model_value=? AND text_hash=?",
+        ((body.value, hash_) for i, hash_ in enumerate(hash_exists) if i not in idxes_excluded)
+    )
+    db.commit()
+    db.close()
 
 
 def get_old_info(value: int) -> str:
