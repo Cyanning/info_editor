@@ -13,7 +13,7 @@ class DatePanel(QDialog):
         self.system_list.currentIndexChanged.connect(self.show_progress)
         self.lab = QLabel("的当前完成度")
 
-        self.progress_bar = QProgressBar()
+        self.progress_bar = QProgressBar(self)
         self.progress_bar.resize(300, 20)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(100)
@@ -54,15 +54,26 @@ class DatePanel(QDialog):
         self.export_all.setFont(font)
 
     def show_progress(self):
-        pass
+        i = self.system_list.currentIndex() - 1
+        percentage = percentage_of_progress_completed(0, i)
 
     def export_sys_database(self):
-        pass
+        try:
+            idx = self.system_list.currentIndex()
+            if idx == 0:
+                self.export_all_database()
+                return
+            filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
+            export_database_of_system_json(filepath, idx - 1)
+        except Exception as e:
+            QMessageBox().critical(self, "错误", f"导出数据发生错误。\n错误原因：\n{e}")
+        else:
+            QMessageBox().information(self, "Good", "导出成功！")
 
     def export_all_database(self):
         try:
             filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
-            export_database_to_json(filepath)
+            export_database_json(filepath)
         except Exception as e:
             QMessageBox().critical(self, "错误", f"导出数据发生错误。\n错误原因：\n{e}")
         else:

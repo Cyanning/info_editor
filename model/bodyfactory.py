@@ -174,18 +174,60 @@ def get_old_info(value: int) -> str:
     return context
 
 
-def export_database_to_json(target_path):
+def export_database_json(target_path):
     """
     把数据库数据导出为json文件
     """
     db, cur = open_database()
     cur.execute("SELECT text_hash,context FROM attribution")
-    data = {"attribution": [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]}
+    _attribution = [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]
 
     cur.execute("SELECT text_hash,model_value,order_id FROM ia_connect")
-    data["ia_connect"] = [{"text_hash": row[0], "model_value": row[1], "order_id": row[2]} for row in cur.fetchall()]
+    _ia_connect = [{"text_hash": row[0], "model_value": row[1], "order_id": row[2]} for row in cur.fetchall()]
 
-    for name, jsonobj in data.items():
+    for name, jsonobj in zip(["attribution", "ia_connect"], [_attribution, _ia_connect]):
         jsonstr = json.dumps(jsonobj, ensure_ascii=False)
         with open(f"{target_path}/{name}.json", 'w', encoding='UTF-8') as f:
             f.write(jsonstr)
+
+
+def export_database_of_system_json(target_path, sysid):
+    """
+    把数据库数据导出为json文件, 分系统
+    """
+    db, cur = open_database()
+    cur.execute("SELECT value FROM info WHERE sysid=%d" % sysid)
+    values = (x[0] for x in cur.fetchall())
+    cur.execute(
+        f"SELECT text_hash,model_value,order_id FROM ia_connect WHERE model_value in ({','.join(map(str, values))})"
+    )
+    _ia_connect = [{"text_hash": row[0], "model_value": row[1], "order_id": row[2]} for row in cur.fetchall()]
+
+    _text_hash = set(x['text_hash'] for x in _ia_connect)
+    cur.execute(f"SELECT text_hash,context FROM attribution WHERE text_hash in ({','.join(_text_hash)})")
+    _attribution = [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]
+
+    for name, jsonobj in zip(["attribution", "ia_connect"], [_attribution, _ia_connect]):
+        jsonstr = json.dumps(jsonobj, ensure_ascii=False)
+        with open(f"{target_path}/{name}.json", 'w', encoding='UTF-8') as f:
+            f.write(jsonstr)
+
+
+def percentage_of_progress_completed(gender, sysid) -> int:
+    """
+    搜索某系统完成的百分比
+    :param gender: 0 or 1
+    :param sysid: -1 为全部
+    :return: 百分比的整数部分
+    """
+    db, cur = open_database()
+    attach = f" AND sysid={sysid}" if sysid == -1 else ""
+    cur.execute(f"SELECT value FROM info WHERE sex={gender}" + attach)
+    values = [str(x) for x in cur.fetchall()]
+    cur.execute(f"SELECT COUNT(DISTINCT model_value) FROM ia_connect WHERE model_value IN ({','.join(values)})")
+    number = cur.fetchone()[0]
+
+    percentage = int(number / len(values) * 100)
+    if percentage > 100:
+        percentage = 100
+    return percentage
