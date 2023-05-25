@@ -291,6 +291,20 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox().information(self, "Good", "导出成功！")
 
+    def warning(self, tittle: str, context: str) -> bool:
+        sure = QMessageBox(self)
+        font = self.font()
+        font.setPointSize(UI_FONTSIZE)
+        font.setFamily(UI_FONTFAMILY)
+        sure.setFont(font)
+        sure.setIcon(QMessageBox.Icon.Warning)
+        sure.setWindowTitle(tittle)
+        sure.setText(context)
+        sure.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        sure.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        flag = sure.exec() == QMessageBox.StandardButton.Ok
+        return flag
+
     def closeEvent(self, event: QCloseEvent):
         """
         重写窗口关闭事件
@@ -316,20 +330,6 @@ class MainWindow(QMainWindow):
 
             case Qt.Key.Key_Right:
                 self.next_model()
-
-    def warning(self, tittle: str, context: str) -> bool:
-        sure = QMessageBox(self)
-        font = self.font()
-        font.setPointSize(UI_FONTSIZE)
-        font.setFamily(UI_FONTFAMILY)
-        sure.setFont(font)
-        sure.setIcon(QMessageBox.Icon.Warning)
-        sure.setWindowTitle(tittle)
-        sure.setText(context)
-        sure.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-        sure.setDefaultButton(QMessageBox.StandardButton.Cancel)
-        flag = sure.exec() == QMessageBox.StandardButton.Ok
-        return flag
 
     def resizeEvent(self, event: QResizeEvent):
         self.widgets['name'].setFixedWidth(self.width() // 2)
