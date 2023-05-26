@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()  # 总布局器
         for row in layout_rows:
             layout.addLayout(row)
+        layout.setContentsMargins(15, 5, 15, 15)
 
         widget = QWidget(self)  # 中央控件
         widget.setLayout(layout)
@@ -138,7 +139,7 @@ class MainWindow(QMainWindow):
         """
         载入模型数据
         """
-        self.widgets['name'].setText(genders[self.model.gender] + self.model.name)
+        self.widgets['name'].setText(GENDERS[self.model.gender] + self.model.name)
         self.widgets['modelid'].setValue(self.model.value)
         self.widgets['info'].setPlainText(self.model.paragraph)
         self.display_sentences_list()
@@ -283,7 +284,7 @@ class MainWindow(QMainWindow):
             self.assist_window.show()
 
     def management_database(self):
-        manager = datapanel.DatePanel()
+        manager = datapanel.DatePanel(self.model.sysid)
         manager.exec()
 
     def warning(self, tittle: str, context: str) -> bool:
@@ -306,7 +307,7 @@ class MainWindow(QMainWindow):
         重写窗口关闭事件
         """
         if self.warning("Confirm quit?", "退出前确认是否保存。\n确认退出？\n"):
-            # del self.assist_window
+            del self.assist_window
             write_cache_model(self.model.value)
             event.accept()
         else:

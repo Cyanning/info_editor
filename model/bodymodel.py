@@ -40,6 +40,15 @@ class BodyModel:
         return val
 
     @property
+    def sysid(self) -> int:
+        if self.value >= 1000000:
+            val = self.value // 100000
+        else:
+            val = self.value // 10000
+        val -= 10
+        return val
+
+    @property
     def value_(self):
         if self.value < 1000000:
             val = "%d " % self.value

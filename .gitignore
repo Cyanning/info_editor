@@ -1,3 +1,6 @@
 /build
 /dist
 /info_editor.spec
+/window_icon.ico
+/cache/creature.db-shm
+/cache/creature.db-wal

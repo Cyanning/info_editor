@@ -202,8 +202,8 @@ def export_database_of_system_json(target_path, sysid):
         f"SELECT text_hash,model_value,order_id FROM ia_connect WHERE model_value in ({','.join(map(str, values))})"
     )
     _ia_connect = [{"text_hash": row[0], "model_value": row[1], "order_id": row[2]} for row in cur.fetchall()]
+    _text_hash = set(f"'{x['text_hash']}'" for x in _ia_connect)
 
-    _text_hash = set(x['text_hash'] for x in _ia_connect)
     cur.execute(f"SELECT text_hash,context FROM attribution WHERE text_hash in ({','.join(_text_hash)})")
     _attribution = [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]
 
@@ -213,7 +213,7 @@ def export_database_of_system_json(target_path, sysid):
             f.write(jsonstr)
 
 
-def percentage_of_progress_completed(gender, sysid) -> int:
+def percentage_of_progress_completed(gender: int | None, sysid: int) -> int:
     """
     搜索某系统完成的百分比
     :param gender: 0 or 1
@@ -221,9 +221,19 @@ def percentage_of_progress_completed(gender, sysid) -> int:
     :return: 百分比的整数部分
     """
     db, cur = open_database()
-    attach = f" AND sysid={sysid}" if sysid == -1 else ""
-    cur.execute(f"SELECT value FROM info WHERE sex={gender}" + attach)
-    values = [str(x) for x in cur.fetchall()]
+    match (gender is None, sysid == -1):
+        case (False, True):
+            attach = " WHERE sex=%d" % gender
+        case (True, False):
+            attach = " WHERE sysid=%d" % sysid
+        case (False, False):
+            attach = " WHERE sex=%d AND sysid=%d" % (gender, sysid)
+        case _:
+            attach = ""
+
+    cur.execute(f"SELECT value FROM info" + attach)
+    values = [str(x[0]) for x in cur.fetchall()]
+
     cur.execute(f"SELECT COUNT(DISTINCT model_value) FROM ia_connect WHERE model_value IN ({','.join(values)})")
     number = cur.fetchone()[0]
 
