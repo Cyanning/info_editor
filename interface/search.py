@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import *
 from model.bodyfactory import *
+from configuration import *
 
 
 class SearchWindow(QDialog):
@@ -73,7 +74,7 @@ class SearchWindow(QDialog):
         self.result.clear()
         self.result_list.clear()
         self.result = [*produce_by_search(keystring, keysysid)]
-        self.result_list.addItems((f"{genders[x.gender]} {x.value_} { x.name}" for x in self.result))
+        self.result_list.addItems((f"{GENDERS[x.gender]} {x.value_} { x.name}" for x in self.result))
 
     @property
     def get_selected_models(self):
