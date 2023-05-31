@@ -1,6 +1,3 @@
-from PyQt6.QtGui import QIcon
-
-
 SYSTEMS = [
     '全部系统',
     '骨骼系统',
@@ -16,7 +13,6 @@ SYSTEMS = [
     '泌尿生殖系统',
     '皮肤'
 ]
-# GENDERS = ["♂️", "♀️"]
 GENDERS = ("cache/male.png", "cache/female.png")
 RTPATH = './'
 UI_FONTSIZE = 11

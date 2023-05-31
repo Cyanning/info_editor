@@ -5,13 +5,17 @@ from configuration import *
 
 
 def write_cache_model(num: int):
-    """写退出时的模型id"""
+    """
+    Record model id.
+    """
     with open(RTPATH + "cache/periousValue.dll", 'w', encoding='UTF-8') as w:
         w.write(str(num))
 
 
 def load_cache_model() -> BodyModel:
-    """读退出时的模型id"""
+    """
+    Read model id.
+    """
     try:
         with open(RTPATH + "cache/periousValue.dll", 'r', encoding='UTF-8') as f:
             strings = f.read().strip()
@@ -28,7 +32,7 @@ def open_database():
 
 def create_by_value(value: int) -> BodyModel:
     """
-    基于id创建模型，附带原info信息
+    Create a model based on id, with original info information.
     """
     db, cur = open_database()
     cur.execute("SELECT name FROM info WHERE value=%d" % value)
@@ -51,9 +55,10 @@ def create_by_value(value: int) -> BodyModel:
 
 def create_next_value(value: int, direction: int) -> BodyModel:
     """
-    生成上一个、下一个、首个、限定系统内的首个模型
-    :param value: 起始/目标
-    :param direction: 前进 +1；后退 -1；跳转 0
+    Generate previous, next, first, first within the bounds system.
+    :param value: model value
+    :param direction: next 1; previous -1; jump 0
+    :return BodyModel Object
     """
     assert 100000 <= value < 212000 or 1000000 <= value < 2120000
     db, cur = open_database()
@@ -80,7 +85,7 @@ def create_next_value(value: int, direction: int) -> BodyModel:
 
 def produce_by_search(kws: str, sysid: int | None) -> BodyModel:
     """
-    根据关键词和系统限定，搜索并生成模型，无句子信息
+    According to keywords and system restrictions, search and generate models without sentence information.
     """
     db, cur = open_database()
     sys_sql = '' if sysid is None else f" AND sysid={sysid}"
@@ -93,7 +98,7 @@ def produce_by_search(kws: str, sysid: int | None) -> BodyModel:
 
 def produce_sentences_by_value(value: int) -> list[Sentence]:
     """
-    基于模型vlaue载入所有关联的句子
+    Load all associated sentences based on model vlaue.
     """
     db, cur = open_database()
     cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY order_id" % value)
@@ -107,6 +112,9 @@ def produce_sentences_by_value(value: int) -> list[Sentence]:
 
 
 def saving_model_basedon_paragraph(model: BodyModel):
+    """
+    Save all relationships of a model base on paragraph attribute of model.
+    """
     try:
         model.convert_into_sentences()
     except AssertionError:
@@ -117,7 +125,7 @@ def saving_model_basedon_paragraph(model: BodyModel):
 
 def saving_model(body: BodyModel):
     """
-    保存一个模型的所有关系
+    Save all relationships of a model.
     """
     db, cur = open_database()
     # 读取已存在的关系
@@ -160,7 +168,7 @@ def saving_model(body: BodyModel):
 
 def get_old_info(value: int) -> str:
     """
-    获取老版本信息
+    Get old version information.
     """
     db, cur = open_database()
     cur.execute("SELECT info FROM info WHERE value=%d" % value)
@@ -176,7 +184,7 @@ def get_old_info(value: int) -> str:
 
 def export_database_json(target_path):
     """
-    把数据库数据导出为json文件
+    Export database as json file.
     """
     db, cur = open_database()
     cur.execute("SELECT text_hash,context FROM attribution")
@@ -193,7 +201,7 @@ def export_database_json(target_path):
 
 def export_database_of_system_json(target_path, sysid):
     """
-    把数据库数据导出为json文件, 分系统
+    Export the specified system database data as a json file.
     """
     db, cur = open_database()
     cur.execute("SELECT value FROM info WHERE sysid=%d" % sysid)
@@ -215,10 +223,10 @@ def export_database_of_system_json(target_path, sysid):
 
 def percentage_of_progress_completed(gender: int | None, sysid: int) -> int:
     """
-    搜索某系统完成的百分比
+    Calculate the percentage complete of a system.
     :param gender: 0 or 1
-    :param sysid: -1 为全部
-    :return: 百分比的整数部分
+    :param sysid: if -1, then no system is specified
+    :return: Integer part of a percentage
     """
     db, cur = open_database()
     match (gender is None, sysid == -1):

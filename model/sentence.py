@@ -25,9 +25,6 @@ class Sentence:
 
     @property
     def gethash(self):
-        """
-        设置语句的hash值
-        """
         sha256 = hashlib.sha256()
         sha256.update(self.value.encode('UTF-8'))
         hashstring = sha256.hexdigest()

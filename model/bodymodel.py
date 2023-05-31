@@ -3,10 +3,6 @@ from model.sentence import Sentence
 
 class BodyModel:
     def __init__(self, value: int, name: str, context):
-        """
-        :param value: 模型id
-        :param context: 信息内容
-        """
         super().__init__()
         self.value = int(value)
         self.name = name
@@ -63,21 +59,22 @@ class BodyModel:
     @paragraph.setter
     def paragraph(self, text):
         """
-        直接赋值给段落
+        Assign directly to the paragraph.
         """
         if type(text) == str:
             self._paragraph = text.strip()
 
     def clean_sentences(self):
         """
-        清理句子列表
+        Clean up the sentence list.
         """
         self._sentences.clear()
 
     def add_into_paragraph(self, context):
         """
-        contexts: 为包含句子对象的可迭代对象，则从句子对象中添加文字到段落；
-        为字符串则直接在段落后衔接内容
+        If context is an iterable object containing a sentence object,
+        add text from the sentence object to the paragraph;
+        if context is a string, connect the content directly after the paragraph.
         """
         if type(context) == str:
             self._paragraph += f"\n{context.strip()}"
@@ -88,7 +85,7 @@ class BodyModel:
 
     def add_into_sentences(self, context):
         """
-        添加多个句子对象
+        Add multiple sentence objects.
         """
         for new in context:
             for old in self._sentences:
@@ -99,7 +96,7 @@ class BodyModel:
 
     def convert_for_paragraph(self):
         """
-        将句子列表的句子转换为段落
+        Convert sentences of a list of sentences into paragraphs.
         """
         if len(self._sentences):
             self._paragraph = "。\n\n".join([x.value for x in self._sentences])
@@ -109,21 +106,22 @@ class BodyModel:
 
     def convert_into_sentences(self):
         """
-        !!!将段落拆分到句子列表, 句子列表会被重置!!!
+        Split the paragraph into a list of sentences,
+        the list of sentences will be reset!!!
         """
         length = len(self._paragraph)
         assert length
         self._sentences = []
-        # 跳出循环的时机利用了 find 函数返回 -1 的特性
+        # The timing of breaking out of the loop takes advantage of the fact that the find function returns -1
         left = 0
         right = 0
         while left < length and right >= 0:
-            # 取得从起点角标往后的字符串中切断点角标
+            # Obtain the cut-off point in the string from the starting point to the end
             right = self._paragraph.find('。\n', left)
             try:
                 text = Sentence(self._paragraph[left:right])
             except ValueError:
-                # 跳过空字符串，但不影响起点前移
+                # Skip empty strings, but do not affect the starting point forward
                 pass
             else:
                 self._sentences.append(text)

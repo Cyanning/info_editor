@@ -9,18 +9,18 @@ from interface import preview, search, display, datapanel
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        # 窗口设置
+        # Window settings
         super().__init__(None)
         self.__init_size()
         self.setWindowTitle("信息编辑器")
         self.setWindowIcon(QIcon(RTPATH + "cache/icon.png"))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.widgets = OrderedDict()  # 组件
-        self.assist_window = display.DisplayWindow(self.height())  # 辅助窗口
-
-        # 主界面布局
+        self.widgets = OrderedDict()  # Widgets dict with ordered
+        self.assist_window = display.DisplayWindow(self.height())  # Auxiliary window
         self.__setup_interface()
-        layout_rows = [QHBoxLayout() for _ in range(4)]  # 每行一个布局器
+
+        # Main interface layout
+        layout_rows = [QHBoxLayout() for _ in range(4)]  # One layout per line
         for key in self.widgets:
             match key:
                 case 'modelid' | 'name' | 'export' | 'save':
@@ -35,108 +35,108 @@ class MainWindow(QMainWindow):
                 case 'addoldinfo' | 'addinfo' | 'split' | 'assignment':
                     layout_rows[3].addWidget(self.widgets[key])
 
-        layout = QVBoxLayout()  # 总布局器
+        # Overall layout and widget
+        layout = QVBoxLayout()
+        layout.setContentsMargins(10, 10, 10, 10)
+        widget = QWidget(self)
         for row in layout_rows:
             layout.addLayout(row)
-        layout.setContentsMargins(10, 10, 10, 10)
-
-        widget = QWidget(self)  # 中央控件
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
-        # 初始化加载模型
+        # Initialize loading model
         self.model = factory.load_cache_model()
         self.load_model()
 
     def __setup_interface(self):
-        # 模型id输入\显示
+        # Model's ID input/display
         self.widgets['modelid'] = QSpinBox(None)
         self.widgets['modelid'].setMinimum(100000)
         self.widgets['modelid'].setMaximum(2119999)
         self.widgets['modelid'].setFixedWidth(100)
         self.widgets['modelid'].setAlignment(Qt.AlignmentFlag.AlignRight)
 
-        # 显示模型名字
+        # Display model name
         self.widgets['name'] = QLineEdit("模型名字")
         self.widgets['name'].setReadOnly(True)
         self.widgets['name'].setFrame(False)
         self.widgets['name'].setFixedWidth(self.width() // 2)
-        # 性别图标
+        # Gender icon in name
         self.widgets['gender_icon'] = QAction()
         self.widgets['name'].addAction(self.widgets['gender_icon'], QLineEdit.ActionPosition.LeadingPosition)
 
-        # 导出当前数据
+        # Export current data
         self.widgets['export'] = QPushButton("管理数据")
         self.widgets['export'].clicked.connect(self.management_database)
 
-        # 保存当前数据
+        # Save current data
         self.widgets['save'] = QPushButton("保  存")
         self.widgets['save'].clicked.connect(self.save_info)
 
-        # 跳转指定id的模型
+        # Jump to the model with the specified id
         self.widgets['jump'] = QPushButton("跳转")
         self.widgets['jump'].clicked.connect(self.jump_model)
 
-        # 切换上一条
+        # Switch to previous
         self.widgets['pervious'] = QPushButton("上一条")
         self.widgets['pervious'].clicked.connect(self.previous_model)
 
-        # 切换下一条
+        # Switch to next
         self.widgets['next'] = QPushButton("下一条")
         self.widgets['next'].clicked.connect(self.next_model)
 
-        # 搜索模型来编辑
+        # Search for models to edit
         self.widgets['search'] = QPushButton("搜索")
         self.widgets['search'].clicked.connect(self.specify_model_from_search)
 
-        # 信息编辑框
+        # Information edit box
         self.widgets['info'] = QPlainTextEdit()
-        self.widgets['info'].setFrameShape(QFrame().frameShape().WinPanel)
+        self.widgets['info'].setFrameShape(QFrame(self.widgets['info']).frameShape().WinPanel)
 
-        # 按句子显示框
+        # Sentence display box
         self.widgets['sentence'] = QListWidget(self)
         self.widgets['sentence'].setWordWrap(True)
-        self.widgets['sentence'].setFrameShape(QFrame().frameShape().WinPanel)
+        self.widgets['sentence'].setFrameShape(QFrame(self.widgets['sentence']).frameShape().WinPanel)
         self.widgets['sentence'].setSelectionMode(QListWidget.SelectionMode.MultiSelection)
 
-        # 加载原始信息
+        # Load original information
         self.widgets['addoldinfo'] = QPushButton("显示原始数据", self)
         self.widgets['addoldinfo'].clicked.connect(self.show_oldinfo_context)
 
-        # 从搜索的模型信息加载
+        # Load from searched model information
         self.widgets['addinfo'] = QPushButton("添加其他信息", self)
         self.widgets['addinfo'].clicked.connect(self.add_sentences_from_search)
 
-        # 按句拆分当前信息
+        # Split the current message by sentence
         self.widgets['split'] = QPushButton("拆分信息")
         self.widgets['split'].clicked.connect(self.load_sentences_list)
 
-        # 将当前句子关联其他模型
+        # Associate the current sentence with other models
         self.widgets['assignment'] = QPushButton("关联其他模型")
         self.widgets['assignment'].clicked.connect(self.sentence_put_others)
 
-        # 批量设置字体
+        # Set fonts in batches
         font = self.font()
         font.setFamily(UI_FONTFAMILY)
         font.setPointSize(UI_FONTSIZE)
         for key in self.widgets:
             self.widgets[key].setFont(font)
-            # 设置焦点策略
+            # Set focus policy
             if key not in ('gender_icon',):
                 self.widgets[key].setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
     def __init_size(self):
         """
-        初始坐标，初始尺寸
+        Initial coordinates, initial size.
         """
         desk = QApplication.primaryScreen().geometry()
         w, h = desk.width(), desk.height()
-        size = map(int, [w / 4, h / 2 - w / 6, w / 2, w / 3])
-        self.setGeometry(*size)
+        sizes = map(int, (w / 4, h / 2 - w / 6, w / 2, w / 3))
+        self.setGeometry(*sizes)
 
     def load_model(self):
         """
-        载入模型数据
+        Load model data.
         """
         self.widgets['gender_icon'].setIcon(QIcon(GENDERS[self.model.gender]))
         self.widgets['name'].setText(self.model.name)
@@ -146,36 +146,27 @@ class MainWindow(QMainWindow):
 
     def display_sentences_list(self):
         """
-        显示句子列表
+        Show sentence list.
         """
         self.widgets['sentence'].clear()
         for i, item in enumerate(self.model, start=1):
             self.widgets['sentence'].addItem(f"{i}. {item.value}")
 
     def previous_model(self):
-        """
-        上一条
-        """
         value = self.model.value
         self.changed_model(value, -1)
 
     def next_model(self):
-        """
-        下一条
-        """
         value = self.model.value
         self.changed_model(value, 1)
 
     def jump_model(self):
-        """
-        跳转指定id，或附近
-        """
         value = self.widgets['modelid'].value()
         self.changed_model(value, 0)
 
     def changed_model(self, value, direction):
         """
-        切换前后模型，或者跳转到指定模型
+        Switch the front and back models, or jump to the specified model.
         """
         try:
             self.model = factory.create_next_value(value, direction)
@@ -185,7 +176,7 @@ class MainWindow(QMainWindow):
 
     def specify_model_from_search(self):
         """
-        搜索模型
+        Search model and jump.
         """
         try:
             modelvals = self.search_model(False)
@@ -196,9 +187,9 @@ class MainWindow(QMainWindow):
 
     def save_info(self):
         """
-        保存信息（以句子为准）
+        Save information（Sentence shall prevail.
         """
-        if not self.warning("Confirm save?", "确定以当前所填内容保存吗？"):
+        if not self.warning("确定以当前所填内容保存吗？"):
             return
         try:
             self.model.paragraph = self.widgets['info'].toPlainText()
@@ -213,7 +204,7 @@ class MainWindow(QMainWindow):
 
     def add_sentences_from_search(self):
         """
-        从数据库添加句子、信息
+        Add sentences, information from database.
         """
         try:
             value = self.search_model(False)
@@ -226,7 +217,9 @@ class MainWindow(QMainWindow):
             QMessageBox().critical(self, "错误", f"错误原因：\n{e}")
 
     def load_sentences_list(self):
-        """拆分句子"""
+        """
+        Split sentences.
+        """
         try:
             self.model.paragraph = self.widgets['info'].toPlainText()
             self.model.convert_into_sentences()
@@ -236,11 +229,13 @@ class MainWindow(QMainWindow):
 
     def sentence_put_others(self):
         """
-        为其他模型添加句子
+        Add sentences for other models.
         """
         try:
+            # 获取句子对象
             sentences = [self.model[i.row()] for i in self.widgets['sentence'].selectedIndexes()]
             assert len(sentences) > 0
+            # 将句子关联到选中的模型中
             modelvals = self.search_model(True)
             models = []
             for item in modelvals:
@@ -248,7 +243,7 @@ class MainWindow(QMainWindow):
                 model_item.add_into_sentences(sentences)
                 model_item.convert_for_paragraph()
                 models.append(model_item)
-
+            # 生成所有模型信息的预览， 等待确认
             agree_preview = preview.PreviewWindow(models, self)
             if agree_preview.exec():
                 for model_item in models:
@@ -261,8 +256,8 @@ class MainWindow(QMainWindow):
 
     def search_model(self, multi: bool):
         """
-        通用搜索窗口回调方法
-        :param multi: False 为单选；True 为多选
+        Common callback method of search window.
+        :param multi: False is radio；True is multiple choice
         """
         keywords = self.model.name
         if keywords[-1] == '）':
@@ -275,7 +270,7 @@ class MainWindow(QMainWindow):
 
     def show_oldinfo_context(self):
         """
-        显示旧info数据
+        Show old info data.
         """
         if self.assist_window.isVisible():
             self.assist_window.hide()
@@ -284,10 +279,16 @@ class MainWindow(QMainWindow):
             self.assist_window.show()
 
     def management_database(self):
+        """
+        Popup of manage data.
+        """
         manager = datapanel.DatePanel(self.model.sysid)
         manager.exec()
 
-    def warning(self, tittle: str, context: str) -> bool:
+    def warning(self, context: str) -> bool:
+        """
+        Generic confirmation popup.
+        """
         font = self.font()
         font.setPointSize(UI_FONTSIZE)
         font.setFamily(UI_FONTFAMILY)
@@ -295,18 +296,19 @@ class MainWindow(QMainWindow):
         sure = QMessageBox(self)
         sure.setFont(font)
         sure.setIcon(QMessageBox.Icon.Warning)
-        sure.setWindowTitle(tittle)
+        sure.setWindowTitle("Confirmation")
         sure.setText(context)
         sure.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
         sure.setDefaultButton(QMessageBox.StandardButton.Cancel)
+
         flag = sure.exec() == QMessageBox.StandardButton.Ok
         return flag
 
     def closeEvent(self, event: QCloseEvent):
         """
-        重写窗口关闭事件
+        Rewrite the window close event.
         """
-        if self.warning("Confirm quit?", "退出前确认是否保存。\n确认退出？\n"):
+        if self.warning("退出前确认是否保存。\n确认退出？\n"):
             del self.assist_window
             factory.write_cache_model(self.model.value)
             event.accept()
@@ -315,7 +317,7 @@ class MainWindow(QMainWindow):
 
     def keyPressEvent(self, event):
         """
-        重写按键事件
+        Rewrite the key response event.
         """
         match event.key():
             case Qt.Key.Key_Return | Qt.Key.Key_Enter:
@@ -329,5 +331,8 @@ class MainWindow(QMainWindow):
                 self.next_model()
 
     def resizeEvent(self, event: QResizeEvent):
+        """
+        Rewind window size change event.
+        """
         self.widgets['name'].setFixedWidth(self.width() // 2)
         super().resizeEvent(event)
