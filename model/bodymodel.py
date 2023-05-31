@@ -1,4 +1,4 @@
-from model.sentence import *
+from model.sentence import Sentence
 
 
 class BodyModel:

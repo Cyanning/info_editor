@@ -2,8 +2,9 @@ from collections import OrderedDict
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
+import model.bodyfactory as factory
+from configuration import *
 from interface import preview, search, display, datapanel
-from model.bodyfactory import *
 
 
 class MainWindow(QMainWindow):
@@ -14,7 +15,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("信息编辑器")
         self.setWindowIcon(QIcon(RTPATH + "cache/icon.png"))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.menuitems = OrderedDict()  # 菜单
         self.widgets = OrderedDict()  # 组件
         self.assist_window = display.DisplayWindow(self.height())  # 辅助窗口
 
@@ -38,14 +38,14 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()  # 总布局器
         for row in layout_rows:
             layout.addLayout(row)
-        layout.setContentsMargins(15, 5, 15, 15)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         widget = QWidget(self)  # 中央控件
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
         # 初始化加载模型
-        self.model = load_cache_model()
+        self.model = factory.load_cache_model()
         self.load_model()
 
     def __setup_interface(self):
@@ -53,15 +53,17 @@ class MainWindow(QMainWindow):
         self.widgets['modelid'] = QSpinBox(None)
         self.widgets['modelid'].setMinimum(100000)
         self.widgets['modelid'].setMaximum(2119999)
-        self.widgets['modelid'].setAlignment(Qt.AlignmentFlag.AlignRight)
         self.widgets['modelid'].setFixedWidth(100)
+        self.widgets['modelid'].setAlignment(Qt.AlignmentFlag.AlignRight)
 
         # 显示模型名字
         self.widgets['name'] = QLineEdit("模型名字")
         self.widgets['name'].setReadOnly(True)
+        self.widgets['name'].setFrame(False)
         self.widgets['name'].setFixedWidth(self.width() // 2)
-        self.widgets['name'].setStyleSheet("border: none;")
-        self.widgets['name'].setAlignment(Qt.AlignmentFlag.AlignVCenter)
+        # 性别图标
+        self.widgets['gender_icon'] = QAction()
+        self.widgets['name'].addAction(self.widgets['gender_icon'], QLineEdit.ActionPosition.LeadingPosition)
 
         # 导出当前数据
         self.widgets['export'] = QPushButton("管理数据")
@@ -116,15 +118,10 @@ class MainWindow(QMainWindow):
         font.setFamily(UI_FONTFAMILY)
         font.setPointSize(UI_FONTSIZE)
         for key in self.widgets:
-            match key:
-                case 'name' | 'save':
-                    font.setBold(True)
-                    self.widgets[key].setFont(font)
-                    font.setBold(False)
-                case _:
-                    self.widgets[key].setFont(font)
+            self.widgets[key].setFont(font)
             # 设置焦点策略
-            self.widgets[key].setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+            if key not in ('gender_icon',):
+                self.widgets[key].setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
     def __init_size(self):
         """
@@ -139,7 +136,8 @@ class MainWindow(QMainWindow):
         """
         载入模型数据
         """
-        self.widgets['name'].setText(GENDERS[self.model.gender] + self.model.name)
+        self.widgets['gender_icon'].setIcon(QIcon(GENDERS[self.model.gender]))
+        self.widgets['name'].setText(self.model.name)
         self.widgets['modelid'].setValue(self.model.value)
         self.widgets['info'].setPlainText(self.model.paragraph)
         self.display_sentences_list()
@@ -178,7 +176,7 @@ class MainWindow(QMainWindow):
         切换前后模型，或者跳转到指定模型
         """
         try:
-            self.model = create_next_value(value, direction)
+            self.model = factory.create_next_value(value, direction)
             self.load_model()
         except AssertionError:
             QMessageBox().warning(self, "警告", "Id 格式错误。")
@@ -189,7 +187,7 @@ class MainWindow(QMainWindow):
         """
         try:
             modelvals = self.search_model(False)
-            self.model = create_by_value(modelvals)
+            self.model = factory.create_by_value(modelvals)
             self.load_model()
         except AssertionError:
             return
@@ -202,13 +200,13 @@ class MainWindow(QMainWindow):
             return
         try:
             self.model.paragraph = self.widgets['info'].toPlainText()
-            saving_model_basedon_paragraph(self.model)
+            factory.saving_model_basedon_paragraph(self.model)
         except Exception as e:
             QMessageBox().critical(self, "错误", f"保存信息发生错误。\n错误原因：\n{e}")
         else:
             QMessageBox().information(self, "Good", "保存成功！")
         finally:
-            self.model = create_by_value(self.model.value)
+            self.model = factory.create_by_value(self.model.value)
             self.load_model()
 
     def add_sentences_from_search(self):
@@ -217,7 +215,7 @@ class MainWindow(QMainWindow):
         """
         try:
             value = self.search_model(False)
-            sentences = produce_sentences_by_value(value)
+            sentences = factory.produce_sentences_by_value(value)
             self.model.add_into_paragraph(sentences)
             self.widgets['info'].appendPlainText(self.model.paragraph)
         except AssertionError:
@@ -244,7 +242,7 @@ class MainWindow(QMainWindow):
             modelvals = self.search_model(True)
             models = []
             for item in modelvals:
-                model_item = create_by_value(item)
+                model_item = factory.create_by_value(item)
                 model_item.add_into_sentences(sentences)
                 model_item.convert_for_paragraph()
                 models.append(model_item)
@@ -252,7 +250,7 @@ class MainWindow(QMainWindow):
             agree_preview = preview.PreviewWindow(models, self)
             if agree_preview.exec():
                 for model_item in models:
-                    saving_model(model_item)
+                    factory.saving_model(model_item)
                 QMessageBox().information(self, "Good", "关联成功！")
         except AssertionError:
             QMessageBox().critical(self, "错误", f"请做出完整的选择。")
@@ -308,7 +306,7 @@ class MainWindow(QMainWindow):
         """
         if self.warning("Confirm quit?", "退出前确认是否保存。\n确认退出？\n"):
             del self.assist_window
-            write_cache_model(self.model.value)
+            factory.write_cache_model(self.model.value)
             event.accept()
         else:
             event.ignore()

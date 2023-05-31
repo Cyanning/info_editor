@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import *
-from model.bodyfactory import *
+from PyQt6.QtCore import Qt
+from model.bodyfactory import BodyModel
 
 
 class PreviewWindow(QDialog):

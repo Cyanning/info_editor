@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
-from model.bodyfactory import *
+from configuration import *
+import model.bodyfactory as factory
 
 
 class DatePanel(QDialog):
@@ -10,7 +11,7 @@ class DatePanel(QDialog):
         self.setMinimumWidth(400)
 
         self.system_list = QComboBox(self)
-        self.gender_boxes = [QCheckBox(GENDERS[0]), QCheckBox(GENDERS[1])]
+        self.gender_boxes = [QCheckBox(), QCheckBox()]
 
         self.lab = QLabel("当前完成度：")
         self.progress_bar = QProgressBar(self)
@@ -38,7 +39,7 @@ class DatePanel(QDialog):
         layout_.addLayout(layout0)
         layout_.addLayout(layout1)
         layout_.addLayout(layout2)
-        layout_.setContentsMargins(20, 15, 20, 20)
+        layout_.setContentsMargins(20, 10, 20, 20)
 
         self.setLayout(layout_)
         self._style()
@@ -56,7 +57,8 @@ class DatePanel(QDialog):
         self.system_list.setFont(font)
         self.system_list.setFixedWidth(150)
 
-        for checkbox in self.gender_boxes:
+        for i, checkbox in enumerate(self.gender_boxes):
+            checkbox.setIcon(QIcon(GENDERS[i]))
             checkbox.setFont(font)
             checkbox.setFixedWidth(50)
             checkbox.clicked.connect(self.show_progress)
@@ -80,7 +82,7 @@ class DatePanel(QDialog):
             gender = 0 if male else 1
         else:
             gender = None
-        self.progress_bar.setValue(percentage_of_progress_completed(gender, sysid))
+        self.progress_bar.setValue(factory.percentage_of_progress_completed(gender, sysid))
 
     def export_sys_database(self):
         try:
@@ -92,7 +94,7 @@ class DatePanel(QDialog):
             if not len(filepath):
                 return
 
-            export_database_of_system_json(filepath, idx - 1)
+            factory.export_database_of_system_json(filepath, idx - 1)
             QMessageBox().information(self, "Good", "导出成功！")
         except Exception as e:
             QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")
@@ -103,7 +105,7 @@ class DatePanel(QDialog):
             if not len(filepath):
                 return
 
-            export_database_json(filepath)
+            factory.export_database_json(filepath)
             QMessageBox().information(self, "Good", "导出成功！")
         except Exception as e:
             QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")

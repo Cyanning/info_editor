@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import *
-from model.bodyfactory import *
+from configuration import *
+import model.bodyfactory as factory
 
 
 class SearchWindow(QDialog):
@@ -52,6 +53,7 @@ class SearchWindow(QDialog):
         font = self.font()
         font.setPointSize(UI_FONTSIZE)
         font.setFamily(UI_FONTFAMILY)
+
         self.search_text.setFont(font)
         self.search_push.setFont(font)
         self.system_list.setFont(font)
@@ -72,8 +74,12 @@ class SearchWindow(QDialog):
         # 搜索并展示
         self.result.clear()
         self.result_list.clear()
-        self.result = [*produce_by_search(keystring, keysysid)]
-        self.result_list.addItems((f"{GENDERS[x.gender]} {x.value_} { x.name}" for x in self.result))
+        self.result = [*factory.produce_by_search(keystring, keysysid)]
+        for _model in self.result:
+            _listitem = QListWidgetItem()
+            _listitem.setIcon(QIcon(GENDERS[_model.gender]))
+            _listitem.setText(f"{_model.value_} {_model.name}")
+            self.result_list.addItem(_listitem)
 
     @property
     def get_selected_models(self):
