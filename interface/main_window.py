@@ -91,10 +91,12 @@ class MainWindow(QMainWindow):
 
         # 信息编辑框
         self.widgets['info'] = QPlainTextEdit()
+        self.widgets['info'].setFrameShape(QFrame().frameShape().WinPanel)
 
         # 按句子显示框
         self.widgets['sentence'] = QListWidget(self)
         self.widgets['sentence'].setWordWrap(True)
+        self.widgets['sentence'].setFrameShape(QFrame().frameShape().WinPanel)
         self.widgets['sentence'].setSelectionMode(QListWidget.SelectionMode.MultiSelection)
 
         # 加载原始信息
