@@ -6,7 +6,7 @@ import model.bodyfactory as factory
 
 
 class DatePanel(QDialog):
-    def __init__(self, parent: QWidget, init_sysid: int):
+    def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.setWindowTitle("管理数据")
         self.setMinimumWidth(int(parent.width() / 2))
@@ -44,7 +44,6 @@ class DatePanel(QDialog):
 
         self.setLayout(layout_)
         self._style()
-        self.system_list.setCurrentIndex(init_sysid + 1)
         self.gender_boxes[0].setChecked(True)
         self.show_progress()
 

@@ -282,7 +282,7 @@ class MainWindow(QMainWindow):
         """
         Popup of manage data.
         """
-        manager = datapanel.DatePanel(self, self.model.sysid)
+        manager = datapanel.DatePanel(self)
         manager.exec()
 
     def warning(self, context: str) -> bool:
