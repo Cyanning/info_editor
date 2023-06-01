@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
         self.setWindowIcon(QIcon(RTPATH + "cache/icon.png"))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.widgets = OrderedDict()  # Widgets dict with ordered
-        self.assist_window = display.DisplayWindow(self.height())  # Auxiliary window
+        self.assist_window = display.DisplayWindow(self)  # Auxiliary window
         self.__setup_interface()
 
         # Main interface layout
@@ -244,7 +244,7 @@ class MainWindow(QMainWindow):
                 model_item.convert_for_paragraph()
                 models.append(model_item)
             # 生成所有模型信息的预览， 等待确认
-            agree_preview = preview.PreviewWindow(models, self)
+            agree_preview = preview.PreviewWindow(self, models)
             if agree_preview.exec():
                 for model_item in models:
                     factory.saving_model(model_item)
@@ -254,19 +254,19 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox().critical(self, "错误", f"添加句子发生错误。\n错误原因：\n{e}")
 
-    def search_model(self, multi: bool):
+    def search_model(self, open_multi: bool):
         """
         Common callback method of search window.
-        :param multi: False is radio；True is multiple choice
+        :param open_multi: False is radio；True is multiple choice
         """
         keywords = self.model.name
         if keywords[-1] == '）':
             keywords = keywords[:keywords.index('（')]
-        popup = search.SearchWindow(keywords, parent=self, multi_mode=multi)
+        popup = search.SearchWindow(self, keywords, multi_mode=open_multi)
         popup.exec()
         modelvals = popup.get_selected_models
         assert len(modelvals)
-        return modelvals if multi else modelvals[0]
+        return modelvals if open_multi else modelvals[0]
 
     def show_oldinfo_context(self):
         """
@@ -275,14 +275,14 @@ class MainWindow(QMainWindow):
         if self.assist_window.isVisible():
             self.assist_window.hide()
         else:
-            self.assist_window.display_info(self.model, self.x(), self.y())
+            self.assist_window.display_info(self.model)
             self.assist_window.show()
 
     def management_database(self):
         """
         Popup of manage data.
         """
-        manager = datapanel.DatePanel(self.model.sysid)
+        manager = datapanel.DatePanel(self, self.model.sysid)
         manager.exec()
 
     def warning(self, context: str) -> bool:

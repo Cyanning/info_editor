@@ -6,10 +6,10 @@ import model.bodyfactory as factory
 
 
 class DatePanel(QDialog):
-    def __init__(self, init_sysid: int, parent=None):
+    def __init__(self, parent: QWidget, init_sysid: int):
         super().__init__(parent)
         self.setWindowTitle("管理数据")
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(int(parent.width() / 2))
 
         self.system_list = QComboBox(self)
         self.gender_boxes = [QCheckBox(), QCheckBox()]
@@ -17,8 +17,8 @@ class DatePanel(QDialog):
         self.lab = QLabel("当前完成度：")
         self.progress_bar = QProgressBar(self)
 
-        self.export_sys = QPushButton("导出当前系统数据")
-        self.export_all = QPushButton("导出所有系统数据")
+        self.export_sys = QPushButton("导出数据")
+        self.export_all = QPushButton("导入数据")
 
         layout0 = QHBoxLayout()
         layout0.addWidget(self.system_list)
@@ -71,10 +71,10 @@ class DatePanel(QDialog):
         self.progress_bar.setRange(0, 100)
 
         self.export_sys.setFont(font)
-        self.export_sys.clicked.connect(self.export_sys_database)
+        self.export_sys.clicked.connect(self.export_database)
 
         self.export_all.setFont(font)
-        self.export_all.clicked.connect(self.export_all_database)
+        self.export_all.clicked.connect(self.import_database)
 
     def show_progress(self):
         sysid = self.system_list.currentIndex() - 1
@@ -85,28 +85,21 @@ class DatePanel(QDialog):
             gender = None
         self.progress_bar.setValue(factory.percentage_of_progress_completed(gender, sysid))
 
-    def export_sys_database(self):
+    def export_database(self):
         try:
-            idx = self.system_list.currentIndex()
-            if not idx:
-                return
-
             filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
-            if not len(filepath):
-                return
-
-            factory.export_database_of_system_json(filepath, idx - 1)
-            QMessageBox().information(self, "Good", "导出成功！")
+            if len(filepath):
+                factory.export_database_json(filepath)
+                QMessageBox().information(self, "Good", "导出成功！")
         except Exception as e:
             QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")
 
-    def export_all_database(self):
+    def import_database(self):
         try:
             filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
-            if not len(filepath):
-                return
-
-            factory.export_database_json(filepath)
-            QMessageBox().information(self, "Good", "导出成功！")
+            if len(filepath):
+                statistics = factory.import_database_from_json(filepath)
+                contents = (f"{item} 表成功导入 {statistics[item]} 条数据" for item in statistics)
+                QMessageBox().information(self, "Good", "；\n".join(contents) + '。')
         except Exception as e:
-            QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")
+            QMessageBox().critical(self, "Error", f"导入数据发生错误。\n错误原因：\n{e}")

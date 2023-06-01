@@ -5,7 +5,7 @@ from configuration import *
 
 
 class PreviewWindow(QDialog):
-    def __init__(self, models: list[BodyModel], parent=None):
+    def __init__(self, parent: QWidget, models: list[BodyModel]):
         super().__init__(parent)
         self.setWindowTitle("预览并确认是否关联")
         # Scrolling area - Used to fill many text boxes

@@ -5,7 +5,7 @@ import model.bodyfactory as factory
 
 
 class SearchWindow(QDialog):
-    def __init__(self, init_keyword: str, multi_mode=False, parent=None):
+    def __init__(self, parent: QWidget, init_keyword: str, multi_mode=False):
         super().__init__(parent)
         self.resize(500, 700)
         self.setWindowTitle("搜索模型")

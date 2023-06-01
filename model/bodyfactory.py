@@ -151,10 +151,13 @@ def saving_model(body: BodyModel):
         # 判断句子是否存在, 不存在就存句子
         cur.execute("SELECT COUNT(*) FROM attribution WHERE text_hash='%s'" % hash_now)
         if cur.fetchone()[0] == 0:
-            cur.execute("INSERT INTO attribution (context,text_hash) VALUES (?,?)", (sentence.value, hash_now))
+            cur.execute(
+                "INSERT INTO attribution (context,text_hash) VALUES (?,?)", (sentence.value, hash_now)
+            )
         # 存关系
         cur.execute(
-            "INSERT INTO ia_connect (model_value,text_hash,order_id) VALUES (?,?,?)", (body.value, hash_now, idx_now)
+            "INSERT INTO ia_connect (model_value,text_hash,order_id) VALUES (?,?,?)",
+            (body.value, hash_now, idx_now)
         )
 
     # 删除无关联的句子关系
@@ -182,43 +185,57 @@ def get_old_info(value: int) -> str:
     return context
 
 
-def export_database_json(target_path):
+def export_database_json(_path):
     """
     Export database as json file.
     """
+    tables = {"attribution", "ia_connect"}
     db, cur = open_database()
-    cur.execute("SELECT text_hash,context FROM attribution")
-    _attribution = [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]
 
-    cur.execute("SELECT text_hash,model_value,order_id FROM ia_connect")
-    _ia_connect = [{"text_hash": row[0], "model_value": row[1], "order_id": row[2]} for row in cur.fetchall()]
+    def _export(name):
+        cur.execute(f"PRAGMA table_info({name})")
+        keys = [x[1] for x in cur.fetchall()]
 
-    for name, jsonobj in zip(["attribution", "ia_connect"], [_attribution, _ia_connect]):
-        jsonstr = json.dumps(jsonobj, ensure_ascii=False)
-        with open(f"{target_path}/{name}.json", 'w', encoding='UTF-8') as f:
-            f.write(jsonstr)
+        cur.execute(f"SELECT {','.join(keys)} FROM {name}")
+        data = [{k: v for k, v in zip(keys, row)} for row in cur.fetchall()]
+
+        data_json = json.dumps(data, ensure_ascii=False)
+        with open(f"{_path}/{name}.json", 'w', encoding='UTF-8') as f:
+            f.write(data_json)
+
+    for key in tables:
+        _export(key)
+    db.close()
+    return tables
 
 
-def export_database_of_system_json(target_path, sysid):
+def import_database_from_json(_path):
     """
-    Export the specified system database data as a json file.
+    Import database from json file.
     """
+    tables = {"attribution": 0, "ia_connect": 0}
     db, cur = open_database()
-    cur.execute("SELECT value FROM info WHERE sysid=%d" % sysid)
-    values = (x[0] for x in cur.fetchall())
-    cur.execute(
-        f"SELECT text_hash,model_value,order_id FROM ia_connect WHERE model_value in ({','.join(map(str, values))})"
-    )
-    _ia_connect = [{"text_hash": row[0], "model_value": row[1], "order_id": row[2]} for row in cur.fetchall()]
-    _text_hash = set(f"'{x['text_hash']}'" for x in _ia_connect)
 
-    cur.execute(f"SELECT text_hash,context FROM attribution WHERE text_hash in ({','.join(_text_hash)})")
-    _attribution = [{"text_hash": row[0], "context": row[1]} for row in cur.fetchall()]
-
-    for name, jsonobj in zip(["attribution", "ia_connect"], [_attribution, _ia_connect]):
-        jsonstr = json.dumps(jsonobj, ensure_ascii=False)
-        with open(f"{target_path}/{name}.json", 'w', encoding='UTF-8') as f:
-            f.write(jsonstr)
+    def _insert(name):
+        with open(f"{_path}/{name}.json", "r", encoding="UTF-8") as f:
+            data = f.read().strip()
+        data = json.loads(data)
+        count = 0
+        for row in data:
+            # Query for duplicate items, and exclude fields with empty values when querying
+            cur.execute(
+                f"SELECT COUNT(*) FROM {name} WHERE {' AND '.join(f'{i}=:{i}' for i in row if row[i] is not None)}",
+                row
+            )
+            if cur.fetchone()[0] == 0:
+                cur.execute(f"INSERT INTO {name} ({','.join(row)}) VALUES ({','.join(f':{i}' for i in row)})", row)
+                db.commit()
+                count += 1
+        return count
+    for key in tables:
+        tables[key] = _insert(key)
+    db.close()
+    return tables
 
 
 def percentage_of_progress_completed(gender: int | None, sysid: int) -> int:
