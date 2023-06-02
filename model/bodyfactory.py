@@ -68,10 +68,11 @@ def create_next_value(value: int, direction: int) -> BodyModel:
     cur.execute(f"SELECT value FROM info ORDER BY sysid,value")
     values = [x[0] for x in cur.fetchall()]
     db.close()
-    try:
+
+    if value in values:
         idx = values.index(value) + direction
         idx %= len(values)
-    except ValueError:
+    else:
         values.sort()  # Sorted from largest to smallest
         maxidx = len(values)
         minidx = 0
@@ -83,6 +84,7 @@ def create_next_value(value: int, direction: int) -> BodyModel:
             else:
                 minidx = mididx
         idx = minidx if value - values[minidx] < values[maxidx] - value else maxidx
+
     return create_by_value(values[idx])
 
 
@@ -179,10 +181,8 @@ def get_old_info(value: int) -> str:
     db, cur = open_database()
     cur.execute("SELECT info FROM info WHERE value=%d" % value)
     context = cur.fetchone()
-
     assert context is not None
     context = context[0]
-
     assert context is not None
     context.strip()
     return context
@@ -235,6 +235,7 @@ def import_database_from_json(_path):
                 db.commit()
                 count += 1
         return count
+
     for key in tables:
         tables[key] = _insert(key)
     db.close()
