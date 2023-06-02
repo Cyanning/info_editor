@@ -63,6 +63,7 @@ class MainWindow(QMainWindow):
         self.widgets['name'].setFixedWidth(self.width() // 2)
         # Gender icon in name
         self.widgets['gender_icon'] = QAction()
+        self.widgets['gender_icon'].triggered.connect(self.change_gender)
         self.widgets['name'].addAction(self.widgets['gender_icon'], QLineEdit.ActionPosition.LeadingPosition)
 
         # Export current data
@@ -284,6 +285,16 @@ class MainWindow(QMainWindow):
         """
         manager = datapanel.DatePanel(self)
         manager.exec()
+
+    def change_gender(self):
+        """
+        Change opposite gender with same name.
+        """
+        for model_res in factory.produce_by_search(self.model.name, None):
+            if model_res.name == self.model.name and model_res.gender != self.model.gender:
+                self.model = factory.create_by_value(model_res.value)
+                self.load_model()
+                break
 
     def warning(self, context: str) -> bool:
         """

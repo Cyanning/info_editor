@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from collections.abc import Generator
 from model.bodymodel import *
 from configuration import *
 
@@ -56,6 +57,8 @@ def create_by_value(value: int) -> BodyModel:
 def create_next_value(value: int, direction: int) -> BodyModel:
     """
     Generate previous, next, first, first within the bounds system.
+    If the value passed in is not in the database,
+    jump to the value closest to this value (take the last digit if the distance is the same).
     :param value: model value
     :param direction: next 1; previous -1; jump 0
     :return BodyModel Object
@@ -69,10 +72,10 @@ def create_next_value(value: int, direction: int) -> BodyModel:
         idx = values.index(value) + direction
         idx %= len(values)
     except ValueError:
-        # 如果传入的value不在数据库里面，则跳转到与此value最接近的value（距离相同取后一位）
-        values.sort()  # 先整理为纯大小排序
+        values.sort()  # Sorted from largest to smallest
         maxidx = len(values)
         minidx = 0
+        # Dichotomy query the value with the smallest difference
         while maxidx - minidx > 1:
             mididx = (maxidx - minidx) // 2 + minidx
             if values[mididx] > value:
@@ -83,7 +86,7 @@ def create_next_value(value: int, direction: int) -> BodyModel:
     return create_by_value(values[idx])
 
 
-def produce_by_search(kws: str, sysid: int | None) -> BodyModel:
+def produce_by_search(kws: str, sysid: int | None) -> Generator[BodyModel]:
     """
     According to keywords and system restrictions, search and generate models without sentence information.
     """
@@ -114,11 +117,11 @@ def produce_sentences_by_value(value: int) -> list[Sentence]:
 def saving_model_basedon_paragraph(model: BodyModel):
     """
     Save all relationships of a model base on paragraph attribute of model.
+    According to the assertion, it is judged to be blank content, and all sentences are deleted.
     """
     try:
         model.convert_into_sentences()
     except AssertionError:
-        # 依据断言判断出为空白内容, 删除所有句子
         model.clean_sentences()
     saving_model(model)
 
@@ -128,39 +131,39 @@ def saving_model(body: BodyModel):
     Save all relationships of a model.
     """
     db, cur = open_database()
-    # 读取已存在的关系
+    # Read existing relationship
     cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY order_id" % body.value)
     hash_exists = [x[0] for x in cur.fetchall()]
     idxes_excluded = set()
 
-    # 循环存储每个句子
+    # Loop through each sentence
     for idx_now, sentence in enumerate(body):
         hash_now = sentence.gethash
-        # 判断关系是否已存在
+        # Determine whether the relationship already exists
         if hash_now in hash_exists:
             idx_exists = hash_exists.index(hash_now)
-            # 如果顺序有变动则更改序号
+            # Change the sequence number if the sequence changes
             if idx_exists != idx_now:
                 cur.execute(
                     "UPDATE ia_connect SET order_id=? WHERE model_value=? AND text_hash=?",
                     (idx_now, body.value, hash_now)
                 )
-            # 记录需要保留的已存在句子
+            # Record existing sentences that need to be kept
             idxes_excluded.add(idx_exists)
             continue
-        # 判断句子是否存在, 不存在就存句子
+        # Judge whether the sentence exists, save the sentence if it does not exist
         cur.execute("SELECT COUNT(*) FROM attribution WHERE text_hash='%s'" % hash_now)
         if cur.fetchone()[0] == 0:
             cur.execute(
                 "INSERT INTO attribution (context,text_hash) VALUES (?,?)", (sentence.value, hash_now)
             )
-        # 存关系
+        # Saving relationship
         cur.execute(
             "INSERT INTO ia_connect (model_value,text_hash,order_id) VALUES (?,?,?)",
             (body.value, hash_now, idx_now)
         )
 
-    # 删除无关联的句子关系
+    # Remove irrelevant sentence relations
     cur.executemany(
         "DELETE FROM ia_connect WHERE model_value=? AND text_hash=?",
         ((body.value, hash_) for i, hash_ in enumerate(hash_exists) if i not in idxes_excluded)

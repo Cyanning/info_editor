@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt
 import model.bodyfactory as factory
 from configuration import *
 
@@ -25,9 +26,11 @@ class DisplayWindow(QWidget):
         font.setFamily(UI_FONTFAMILY)
         font.setPointSize(UI_FONTSIZE)
         self.lab.setFont(font)
+        self.lab.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         font.setPointSize(UI_FONTSIZE - 1)
         self.browser.setFont(font)
+        self.browser.setFrameShape(QFrame(self.browser).frameShape().WinPanel)
 
     def display_info(self, model: factory.BodyModel):
         self.resize(self.__width, self.main_window.height())
