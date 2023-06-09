@@ -57,12 +57,11 @@ class MainWindow(QMainWindow):
         self.widgets['modelid'].setAlignment(Qt.AlignmentFlag.AlignRight)
 
         # Display model name
-        self.widgets['name'] = QLineEdit("模型名字")
+        self.widgets['name'] = QLineEdit()
         self.widgets['name'].setReadOnly(True)
         self.widgets['name'].setFrame(False)
         self.widgets['name'].setFixedWidth(self.width() // 2)
-        # Gender icon in name
-        self.widgets['gender_icon'] = QAction()
+        self.widgets['gender_icon'] = QAction()  # Gender icon in name
         self.widgets['gender_icon'].triggered.connect(self.change_gender)
         self.widgets['name'].addAction(self.widgets['gender_icon'], QLineEdit.ActionPosition.LeadingPosition)
 

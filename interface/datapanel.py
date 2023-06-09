@@ -17,8 +17,9 @@ class DatePanel(QDialog):
         self.lab = QLabel("当前完成度：")
         self.progress_bar = QProgressBar(self)
 
-        self.export_sys = QPushButton("导出数据")
-        self.export_all = QPushButton("导入数据")
+        self.export_data = QPushButton("导出数据")
+        self.import_data = QPushButton("导入数据")
+        self.export_lost = QPushButton("导出未录数据")
 
         layout0 = QHBoxLayout()
         layout0.addWidget(self.system_list)
@@ -32,8 +33,9 @@ class DatePanel(QDialog):
         layout1.setContentsMargins(0, 10, 0, 0)
 
         layout2 = QHBoxLayout()
-        layout2.addWidget(self.export_sys)
-        layout2.addWidget(self.export_all)
+        layout2.addWidget(self.export_data)
+        layout2.addWidget(self.import_data)
+        layout2.addWidget(self.export_lost)
         layout2.setContentsMargins(0, 10, 0, 0)
 
         layout_ = QVBoxLayout()
@@ -69,11 +71,13 @@ class DatePanel(QDialog):
         self.progress_bar.resize(300, 20)
         self.progress_bar.setRange(0, 100)
 
-        self.export_sys.setFont(font)
-        self.export_sys.clicked.connect(self.export_database)
+        self.export_data.setFont(font)
+        self.export_data.clicked.connect(self.export_database)
 
-        self.export_all.setFont(font)
-        self.export_all.clicked.connect(self.import_database)
+        self.import_data.setFont(font)
+        self.import_data.clicked.connect(self.import_database)
+
+        self.export_lost.setFont(font)
 
     def show_progress(self):
         sysid = self.system_list.currentIndex() - 1
