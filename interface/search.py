@@ -1,7 +1,9 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
-from configuration import *
 import model.bodyfactory as factory
+from configuration import (
+    GENDERS, UI_FONTSIZE, UI_FONTFAMILY, SYSTEMS
+)
 
 
 class SearchWindow(QDialog):

@@ -2,7 +2,9 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 import model.bodyfactory as factory
-from configuration import *
+from configuration import (
+    UI_FONTSIZE, UI_FONTFAMILY
+)
 
 
 class DisplayWindow(QWidget):

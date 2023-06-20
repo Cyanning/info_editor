@@ -1,8 +1,10 @@
 import json
 import sqlite3
 from collections.abc import Generator
-from model.bodymodel import *
-from configuration import *
+from model.bodymodel import BodyModel, Sentence
+from configuration import (
+    VALUE_PATH, DATABASE_PATH
+)
 
 
 def write_cache_model(num: int):

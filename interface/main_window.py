@@ -2,8 +2,14 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 import model.bodyfactory as factory
-from configuration import *
-from interface import preview, search, display, datapanel, interface_widget
+from interface.preview import PreviewWindow
+from interface.search import SearchWindow
+from interface.display import DisplayWindow
+from interface.datapanel import DatePanel
+from interface.interface_widget import InterfaceWidgets
+from configuration import (
+    WINDOW_ICON_PATH, UI_FONTFAMILY, UI_FONTSIZE, GENDERS
+)
 
 
 class MainWindow(QMainWindow):
@@ -19,10 +25,10 @@ class MainWindow(QMainWindow):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         # Auxiliary window
-        self.assist_window = display.DisplayWindow(self)
+        self.assist_window = DisplayWindow(self)
 
         # UI widgets
-        self.widgets = interface_widget.InterfaceWidgets(
+        self.widgets = InterfaceWidgets(
             ['modelid', 'name', 'export', 'save'],
             ['jump', 'pervious', 'next', 'search'],
             ['info', 'sentence'],
@@ -231,7 +237,7 @@ class MainWindow(QMainWindow):
                 model_item.convert_for_paragraph()
                 models.append(model_item)
             # 生成所有模型信息的预览， 等待确认
-            agree_preview = preview.PreviewWindow(self, models)
+            agree_preview = PreviewWindow(self, models)
             if agree_preview.exec():
                 for model_item in models:
                     factory.saving_model(model_item)
@@ -249,7 +255,7 @@ class MainWindow(QMainWindow):
         keywords = self.model.name
         if keywords[-1] == '）':
             keywords = keywords[:keywords.index('（')]
-        popup = search.SearchWindow(self, keywords, multi_mode=open_multi)
+        popup = SearchWindow(self, keywords, multi_mode=open_multi)
         popup.exec()
         modelvals = popup.get_selected_models
         assert len(modelvals)
@@ -269,7 +275,7 @@ class MainWindow(QMainWindow):
         """
         Popup of manage data.
         """
-        manager = datapanel.DatePanel(self)
+        manager = DatePanel(self)
         manager.exec()
 
     def change_gender(self):

@@ -1,7 +1,9 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
 from model.bodyfactory import BodyModel
-from configuration import *
+from configuration import (
+    UI_FONTFAMILY, UI_FONTSIZE
+)
 
 
 class PreviewWindow(QDialog):
