@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
             for kw in row:
                 row_layout.addWidget(self.widgets[kw])
             main_layout.addLayout(row_layout)
-        main_widget = QWidget()
+        main_widget = QWidget(None)
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
 
