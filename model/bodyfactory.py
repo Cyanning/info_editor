@@ -9,7 +9,7 @@ def write_cache_model(num: int):
     """
     Record model id.
     """
-    with open(RTPATH + "cache/periousValue.dll", 'w', encoding='UTF-8') as w:
+    with open(VALUE_PATH, 'w', encoding='UTF-8') as w:
         w.write(str(num))
 
 
@@ -18,7 +18,7 @@ def load_cache_model() -> BodyModel:
     Read model id.
     """
     try:
-        with open(RTPATH + "cache/periousValue.dll", 'r', encoding='UTF-8') as f:
+        with open(VALUE_PATH, 'r', encoding='UTF-8') as f:
             strings = f.read().strip()
             value = int(strings)
             return create_by_value(value)
@@ -27,7 +27,7 @@ def load_cache_model() -> BodyModel:
 
 
 def open_database():
-    database = sqlite3.connect(RTPATH + "cache/creature.db")
+    database = sqlite3.connect(DATABASE_PATH)
     return database, database.cursor()
 
 

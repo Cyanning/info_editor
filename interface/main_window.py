@@ -1,54 +1,58 @@
-from collections import OrderedDict
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 import model.bodyfactory as factory
 from configuration import *
-from interface import preview, search, display, datapanel
+from interface import preview, search, display, datapanel, interface_widget
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        # Window settings
         super().__init__(None)
-        self.__init_size()
+        # Window settings
+        desk = QApplication.primaryScreen().geometry()
+        w, h = desk.width(), desk.height()
+        sizes = map(int, (w / 4, h / 2 - w / 6, w / 2, w / 3))
+        self.setGeometry(*sizes)
         self.setWindowTitle("信息编辑器")
-        self.setWindowIcon(QIcon(RTPATH + "cache/icon.png"))
+        self.setWindowIcon(QIcon(WINDOW_ICON_PATH))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.widgets = OrderedDict()  # Widgets dict with ordered
-        self.assist_window = display.DisplayWindow(self)  # Auxiliary window
-        self.__setup_interface()
 
-        # Main interface layout
-        layout_rows = [QHBoxLayout() for _ in range(4)]  # One layout per line
-        for key in self.widgets:
-            match key:
-                case 'modelid' | 'name' | 'export' | 'save':
-                    layout_rows[0].addWidget(self.widgets[key])
+        # Auxiliary window
+        self.assist_window = display.DisplayWindow(self)
 
-                case 'jump' | 'pervious' | 'next' | 'search':
-                    layout_rows[1].addWidget(self.widgets[key])
+        # UI widgets
+        self.widgets = interface_widget.InterfaceWidgets(
+            ['modelid', 'name', 'export', 'save'],
+            ['jump', 'pervious', 'next', 'search'],
+            ['info', 'sentence'],
+            ['addoldinfo', 'addinfo', 'split', 'assignment']
+        )
+        self.__add_widgets()
 
-                case 'info' | 'sentence':
-                    layout_rows[2].addWidget(self.widgets[key])
+        # Set fonts,focus policy
+        font = QFont(UI_FONTFAMILY, UI_FONTSIZE)
+        for key, widget in self.widgets.iter_widgets():
+            widget.setFont(font)
+            if key != "gender_icon":
+                widget.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
-                case 'addoldinfo' | 'addinfo' | 'split' | 'assignment':
-                    layout_rows[3].addWidget(self.widgets[key])
+        # Layout
+        main_layout = QVBoxLayout()
+        for i, row in self.widgets.iter_keywords():
+            row_layout = QHBoxLayout()
+            for kw in row:
+                row_layout.addWidget(self.widgets[kw])
+            main_layout.addLayout(row_layout)
+        main_widget = QWidget()
+        main_widget.setLayout(main_layout)
+        self.setCentralWidget(main_widget)
 
-        # Overall layout and widget
-        layout = QVBoxLayout()
-        layout.setContentsMargins(10, 10, 10, 10)
-        widget = QWidget(self)
-        for row in layout_rows:
-            layout.addLayout(row)
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
-
-        # Initialize loading model
+        # Initialize model
         self.model = factory.load_cache_model()
         self.load_model()
 
-    def __setup_interface(self):
+    def __add_widgets(self):
         # Model's ID input/display
         self.widgets['modelid'] = QSpinBox(None)
         self.widgets['modelid'].setMinimum(100000)
@@ -61,6 +65,8 @@ class MainWindow(QMainWindow):
         self.widgets['name'].setReadOnly(True)
         self.widgets['name'].setFrame(False)
         self.widgets['name'].setFixedWidth(self.width() // 2)
+
+        # Gender icon
         self.widgets['gender_icon'] = QAction()  # Gender icon in name
         self.widgets['gender_icon'].triggered.connect(self.change_gender)
         self.widgets['name'].addAction(self.widgets['gender_icon'], QLineEdit.ActionPosition.LeadingPosition)
@@ -114,25 +120,6 @@ class MainWindow(QMainWindow):
         # Associate the current sentence with other models
         self.widgets['assignment'] = QPushButton("关联其他模型")
         self.widgets['assignment'].clicked.connect(self.sentence_put_others)
-
-        # Set fonts in batches
-        font = self.font()
-        font.setFamily(UI_FONTFAMILY)
-        font.setPointSize(UI_FONTSIZE)
-        for key in self.widgets:
-            self.widgets[key].setFont(font)
-            # Set focus policy
-            if key not in ('gender_icon',):
-                self.widgets[key].setFocusPolicy(Qt.FocusPolicy.ClickFocus)
-
-    def __init_size(self):
-        """
-        Initial coordinates, initial size.
-        """
-        desk = QApplication.primaryScreen().geometry()
-        w, h = desk.width(), desk.height()
-        sizes = map(int, (w / 4, h / 2 - w / 6, w / 2, w / 3))
-        self.setGeometry(*sizes)
 
     def load_model(self):
         """
