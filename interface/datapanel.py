@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 import model.bodyfactory as factory
 from configuration import (
-    UI_FONTFAMILY, UI_FONTSIZE, SYSTEMS
+    UI_FONTFAMILY, UI_FONTSIZE, SYSTEMS, GENDERS
 )
 
 
