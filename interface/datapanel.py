@@ -80,15 +80,26 @@ class DatePanel(QDialog):
         self.import_data.clicked.connect(self.import_database)
 
         self.export_lost.setFont(font)
+        self.export_lost.clicked.connect(self.export_undone)
 
-    def show_progress(self):
+    @property
+    def get_sys_and_gender(self):
         sysid = self.system_list.currentIndex() - 1
         male = self.gender_boxes[0].checkState() == Qt.CheckState.Checked
-        if male ^ (self.gender_boxes[1].checkState() == Qt.CheckState.Checked):
-            gender = 0 if male else 1
+        female = self.gender_boxes[1].checkState() == Qt.CheckState.Checked
+        if male ^ female:
+            if male:
+                gender = 0
+            else:
+                gender = 1
         else:
             gender = None
-        self.progress_bar.setValue(factory.percentage_of_progress_completed(gender, sysid))
+        return sysid, gender
+
+    def show_progress(self):
+        self.progress_bar.setValue(
+            factory.percentage_of_progress_completed(*self.get_sys_and_gender)
+        )
 
     def export_database(self):
         try:
@@ -107,4 +118,13 @@ class DatePanel(QDialog):
                 contents = (f"{item} 表成功导入 {statistics[item]} 条数据" for item in statistics)
                 QMessageBox().information(self, "Good", "；\n".join(contents) + '。')
         except Exception as e:
-            QMessageBox().critical(self, "Error", f"导入数据发生错误。\n错误原因：\n{e}")
+            QMessageBox().critical(self, "Error", f"导入数据发生错误。\n错误原因：{e}")
+
+    def export_undone(self):
+        try:
+            filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
+            if len(filepath):
+                factory.export_undone_model(filepath)
+                QMessageBox().information(self, "Good", "导出成功！")
+        except Exception as e:
+            QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")

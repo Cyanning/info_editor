@@ -205,6 +205,26 @@ def get_old_info(value: int) -> str:
     return context
 
 
+# Generate a conditional statement based on the passed in condition.
+def generate_condition(func):
+    def wrapper(**kwargs):
+        gender = kwargs["gender"]
+        sysid = kwargs["sysid"]
+        match (gender is None, sysid == -1):
+            case (False, True):
+                attach = " WHERE sex=%d" % gender
+            case (True, False):
+                attach = " WHERE sysid=%d" % sysid
+            case (False, False):
+                attach = " WHERE sex=%d AND sysid=%d" % (gender, sysid)
+            case _:
+                attach = ""
+        res = func(attach)
+        return res
+
+    return wrapper
+
+
 def export_database_json(_path):
     """
     Export database as json file.
@@ -229,56 +249,66 @@ def export_database_json(_path):
     return tables
 
 
+def export_undone_model(_path):
+    """
+    Export the models id which hadn't new content.
+    """
+    db, cur = open_database()
+    cur.execute(
+        "SELECT info.value FROM info LEFT OUTER JOIN ia_connect ON info.value = ia_connect.model_value "
+        "WHERE ia_connect.model_value IS NULL"
+    )
+    values = (str(row[0]) for row in cur.fetchall())
+    with open(_path + "未完成id.txt", 'w', encoding='UTF-8') as f:
+        f.write("\n".join(values))
+
+
 def import_database_from_json(_path) -> dict:
     """
     Import database from json file.
     Returns a dictionary consisting of imported data volumes.
     e.q:{table_name: number}
     """
-    tables = {"attribution": 0, "ia_connect": 0}
-    db, cur = open_database()
+    tables_count = {"attribution": 0, "ia_connect": 0}
+    table_unique_fields = {"attribution": ["text_hash", "context"], "ia_connect": ["model_value", "text_hash"]}
 
     def _insert(name):
         with open(f"{_path}/{name}.json", "r", encoding="UTF-8") as f:
             data = f.read().strip()
-        data = json.loads(data)
+            data = json.loads(data)
         count = 0
         for row in data:
-            # Query for duplicate items, and exclude fields with empty values when querying
+            # Query for duplicate items, and exclude fields with empty values when querying.
             cur.execute(
-                f"SELECT COUNT(*) FROM {name} WHERE {' AND '.join(f'{i}=:{i}' for i in row if row[i] is not None)}",
+                "SELECT COUNT(*) FROM {} WHERE {}".format(
+                    name, ' AND '.join(f'{field}=:{field}' for field in table_unique_fields[name])
+                ),
                 row
             )
-            if cur.fetchone()[0] == 0:
-                cur.execute(f"INSERT INTO {name} ({','.join(row)}) VALUES ({','.join(f':{i}' for i in row)})", row)
-                db.commit()
-                count += 1
+            if cur.fetchone()[0] > 0:
+                continue
+            cur.execute(
+                f"INSERT INTO {name} ({','.join(row)}) VALUES ({','.join(f':{field}' for field in row)})",
+                row
+            )
+            db.commit()
+            count += 1
         return count
 
-    for key in tables:
-        tables[key] = _insert(key)
+    db, cur = open_database()
+    for key in tables_count:
+        tables_count[key] = _insert(key)
     db.close()
-    return tables
+    return tables_count
 
 
-def percentage_of_progress_completed(gender: int | None, sysid: int) -> int:
+@generate_condition
+def percentage_of_progress_completed(attach) -> int:
     """
     Calculate the percentage complete of a system.
-    :param gender: 0 or 1
-    :param sysid: if -1, then no system is specified
     :return: Integer part of a percentage
     """
     db, cur = open_database()
-    match (gender is None, sysid == -1):
-        case (False, True):
-            attach = " WHERE sex=%d" % gender
-        case (True, False):
-            attach = " WHERE sysid=%d" % sysid
-        case (False, False):
-            attach = " WHERE sex=%d AND sysid=%d" % (gender, sysid)
-        case _:
-            attach = ""
-
     cur.execute(f"SELECT value FROM info" + attach)
     values = [str(x[0]) for x in cur.fetchall()]
 
