@@ -11,4 +11,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    a = None
+    a.strip()
+    print(a)

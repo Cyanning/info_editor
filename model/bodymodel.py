@@ -27,6 +27,10 @@ class BodyModel:
         return any((x == item for x in self._sentences))
 
     @property
+    def paragraph(self):
+        return self._paragraph
+
+    @property
     def gender(self) -> int:
         if self.value >= 1000000:
             val = self.value // 10000
@@ -51,10 +55,6 @@ class BodyModel:
         else:
             val = str(self.value)
         return val
-
-    @property
-    def paragraph(self):
-        return self._paragraph
 
     @paragraph.setter
     def paragraph(self, text):
@@ -106,8 +106,7 @@ class BodyModel:
 
     def convert_into_sentences(self):
         """
-        Split the paragraph into a list of sentences,
-        the list of sentences will be reset!!!
+        Split the paragraph into a list of sentences, the list of sentences will be reset!!!
         """
         length = len(self._paragraph)
         assert length

@@ -33,17 +33,29 @@ def open_database():
     return database, database.cursor()
 
 
+class OpenDatabase:
+    def __enter__(self):
+        self.database = sqlite3.connect(DATABASE_PATH)
+        return self.database
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.database.close()
+
+
 def create_by_value(value: int) -> BodyModel:
     """
     Create a model based on id, with original info information.
     """
     db, cur = open_database()
+    # Seek model name
     cur.execute("SELECT name FROM info WHERE value=%d" % value)
     res = cur.fetchone()
     assert res is not None
+    # Seek all sentence's hash
     name = res[0]
     cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY order_id" % value)
     sentence_hashes = [x[0] for x in cur.fetchall()]
+    # Seek sentence text
     sentences = []
     for sentence_hash in sentence_hashes:
         cur.execute("SELECT context FROM attribution WHERE text_hash='%s'" % sentence_hash)
@@ -51,6 +63,7 @@ def create_by_value(value: int) -> BodyModel:
             sentences.append(cur.fetchone()[0])
         except (TypeError, IndexError):
             continue
+    # Objective model
     model = BodyModel(value, name, sentences)
     db.close()
     return model
@@ -66,10 +79,10 @@ def create_next_value(value: int, direction: int) -> BodyModel:
     :return BodyModel Object
     """
     assert 100000 <= value < 212000 or 1000000 <= value < 2120000
-    db, cur = open_database()
-    cur.execute(f"SELECT value FROM info ORDER BY sysid,value")
-    values = [x[0] for x in cur.fetchall()]
-    db.close()
+    with OpenDatabase() as db:
+        cur = db.cursor()
+        cur.execute(f"SELECT value FROM info ORDER BY sysid,value")
+        values = [x[0] for x in cur.fetchall()]
 
     if value in values:
         idx = values.index(value) + direction
@@ -180,13 +193,15 @@ def get_old_info(value: int) -> str:
     """
     Get old version information.
     """
-    db, cur = open_database()
-    cur.execute("SELECT info FROM info WHERE value=%d" % value)
-    context = cur.fetchone()
-    assert context is not None
-    context = context[0]
-    assert context is not None
-    context.strip()
+    with OpenDatabase() as db:
+        cur = db.cursor()
+        cur.execute("SELECT info FROM info WHERE value=%d" % value)
+        context = cur.fetchone()
+    try:
+        context = context[0]
+        context.strip()
+    except (TypeError, AttributeError):
+        context = ""
     return context
 
 
@@ -214,9 +229,11 @@ def export_database_json(_path):
     return tables
 
 
-def import_database_from_json(_path):
+def import_database_from_json(_path) -> dict:
     """
     Import database from json file.
+    Returns a dictionary consisting of imported data volumes.
+    e.q:{table_name: number}
     """
     tables = {"attribution": 0, "ia_connect": 0}
     db, cur = open_database()
@@ -267,6 +284,7 @@ def percentage_of_progress_completed(gender: int | None, sysid: int) -> int:
 
     cur.execute(f"SELECT COUNT(DISTINCT model_value) FROM ia_connect WHERE model_value IN ({','.join(values)})")
     number = cur.fetchone()[0]
+    db.close()
 
     percentage = int(number / len(values) * 100)
     if percentage > 100:
