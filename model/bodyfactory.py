@@ -205,26 +205,6 @@ def get_old_info(value: int) -> str:
     return context
 
 
-# Generate a conditional statement based on the passed in condition.
-def generate_condition(func):
-    def wrapper(**kwargs):
-        gender = kwargs["gender"]
-        sysid = kwargs["sysid"]
-        match (gender is None, sysid == -1):
-            case (False, True):
-                attach = " WHERE sex=%d" % gender
-            case (True, False):
-                attach = " WHERE sysid=%d" % sysid
-            case (False, False):
-                attach = " WHERE sex=%d AND sysid=%d" % (gender, sysid)
-            case _:
-                attach = ""
-        res = func(attach)
-        return res
-
-    return wrapper
-
-
 def export_database_json(_path):
     """
     Export database as json file.
@@ -249,14 +229,20 @@ def export_database_json(_path):
     return tables
 
 
-def export_undone_model(_path):
+def export_undone_model(_path, sysid: int | None, gender: int | None):
     """
     Export the models id which hadn't new content.
     """
+    condition = ""
+    if sysid is not None:
+        condition += f" AND sysid={sysid}"
+    if gender is not None:
+        condition += f" AND sex={gender}"
+
     db, cur = open_database()
     cur.execute(
         "SELECT info.value FROM info LEFT OUTER JOIN ia_connect ON info.value = ia_connect.model_value "
-        "WHERE ia_connect.model_value IS NULL"
+        "WHERE ia_connect.model_value IS NULL" + condition
     )
     values = (str(row[0]) for row in cur.fetchall())
     with open(_path + "未完成id.txt", 'w', encoding='UTF-8') as f:
@@ -302,14 +288,20 @@ def import_database_from_json(_path) -> dict:
     return tables_count
 
 
-@generate_condition
-def percentage_of_progress_completed(attach) -> int:
+def percentage_of_progress_completed(sysid: int | None, gender: int | None) -> int:
     """
     Calculate the percentage complete of a system.
     :return: Integer part of a percentage
     """
+    condition = ""
+    if sysid is not None:
+        condition += f" WHERE sysid={sysid}"
+    if gender is not None:
+        condition += " AND " if condition else " WHERE "
+        condition += f"sex={gender}"
+
     db, cur = open_database()
-    cur.execute(f"SELECT value FROM info" + attach)
+    cur.execute(f"SELECT value FROM info" + condition)
     values = [str(x[0]) for x in cur.fetchall()]
 
     cur.execute(f"SELECT COUNT(DISTINCT model_value) FROM ia_connect WHERE model_value IN ({','.join(values)})")

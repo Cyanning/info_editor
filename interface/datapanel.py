@@ -83,22 +83,24 @@ class DatePanel(QDialog):
         self.export_lost.clicked.connect(self.export_undone)
 
     @property
-    def get_sys_and_gender(self):
-        sysid = self.system_list.currentIndex() - 1
+    def current_sysid(self):
+        sysid = self.system_list.currentIndex()
+        sysid = None if sysid == 0 else sysid - 1
+        return sysid
+
+    @property
+    def current_gender(self):
         male = self.gender_boxes[0].checkState() == Qt.CheckState.Checked
         female = self.gender_boxes[1].checkState() == Qt.CheckState.Checked
         if male ^ female:
-            if male:
-                gender = 0
-            else:
-                gender = 1
+            gender = 0 if male else 1
         else:
             gender = None
-        return sysid, gender
+        return gender
 
     def show_progress(self):
         self.progress_bar.setValue(
-            factory.percentage_of_progress_completed(*self.get_sys_and_gender)
+            factory.percentage_of_progress_completed(sysid=self.current_sysid, gender=self.current_gender)
         )
 
     def export_database(self):
@@ -124,7 +126,7 @@ class DatePanel(QDialog):
         try:
             filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
             if len(filepath):
-                factory.export_undone_model(filepath)
+                factory.export_undone_model(filepath, self.current_sysid, self.current_gender)
                 QMessageBox().information(self, "Good", "导出成功！")
         except Exception as e:
             QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")

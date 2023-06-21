@@ -35,16 +35,18 @@ class InterfaceWidgets:
 
     def iter_widgets_with_index(self):
         for kw in self.widgets:
-            row_num = -1
+            not_yet = True  # Controls whether to yield
+            row_num = 0
             row_span = 0
             col_num = 0
             col_span = 0
             for i, rows in enumerate(self.keywords):
                 if kw in self.keywords[i]:
-                    if row_num == -1:
+                    if not_yet:
+                        not_yet = False
                         row_num = i
                         col_num = self.keywords[i].index(kw)
                         col_span = self.keywords[i].count(kw)
                     row_span += 1
-            if row_num > -1:
+            if row_num != -1:
                 yield self.widgets[kw], row_num, col_num, row_span, col_span
