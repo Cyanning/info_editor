@@ -2,13 +2,14 @@ from model.sentence import Sentence
 
 
 class BodyModel:
-    def __init__(self, value: int, name: str, context):
+    def __init__(self, value: int, name: str, context=None):
         super().__init__()
         self.value = int(value)
         self.name = name
-        self._sentences = [Sentence(x) for x in context]
-        self._paragraph = ''
-        self.convert_for_paragraph()
+        self._paragraph = ""
+        if context is not None:
+            self._sentences = [Sentence(x) for x in context]
+            self.convert_for_paragraph()
 
     def __iter__(self):
         return self._sentences.__iter__()
