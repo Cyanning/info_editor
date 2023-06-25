@@ -1,15 +1,16 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-import model.bodyfactory as factory
+from model.bodyfactory import BodyFactory
 from configuration import (
     UI_FONTFAMILY, UI_FONTSIZE, SYSTEMS, GENDERS
 )
 
 
 class DatePanel(QDialog):
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget, factory: BodyFactory):
         super().__init__(parent)
+        self.factory = factory
         self.setWindowTitle("管理数据")
         self.setMinimumWidth(int(parent.width() / 2))
 
@@ -100,14 +101,14 @@ class DatePanel(QDialog):
 
     def show_progress(self):
         self.progress_bar.setValue(
-            factory.percentage_of_progress_completed(sysid=self.current_sysid, gender=self.current_gender)
+            self.factory.percentage_of_progress_completed(sysid=self.current_sysid, gender=self.current_gender)
         )
 
     def export_database(self):
         try:
             filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
             if len(filepath):
-                factory.export_database_json(filepath)
+                self.factory.export_database_json(filepath)
                 QMessageBox().information(self, "Good", "导出成功！")
         except Exception as e:
             QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")
@@ -116,7 +117,7 @@ class DatePanel(QDialog):
         try:
             filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
             if len(filepath):
-                statistics = factory.import_database_from_json(filepath)
+                statistics = self.factory.import_database_from_json(filepath)
                 contents = (f"{item} 表成功导入 {statistics[item]} 条数据" for item in statistics)
                 QMessageBox().information(self, "Good", "；\n".join(contents) + '。')
         except Exception as e:
@@ -126,7 +127,7 @@ class DatePanel(QDialog):
         try:
             filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
             if len(filepath):
-                factory.export_undone_model(filepath, self.current_sysid, self.current_gender)
+                self.factory.export_undone_model(filepath, self.current_sysid, self.current_gender)
                 QMessageBox().information(self, "Good", "导出成功！")
         except Exception as e:
             QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")

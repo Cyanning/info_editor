@@ -73,7 +73,7 @@ class MainWindow(QMainWindow):
         self.widgets['name'].setFixedWidth(self.width() // 2)
 
         # Gender icon
-        self.widgets['gender_icon'] = QAction()  # Gender icon in name
+        self.widgets['gender_icon'] = QAction()  # Gender icon on name
         self.widgets['gender_icon'].triggered.connect(self.change_gender)
         self.widgets['name'].addAction(self.widgets['gender_icon'], QLineEdit.ActionPosition.LeadingPosition)
 
@@ -246,10 +246,7 @@ class MainWindow(QMainWindow):
         Common callback method of search window.
         :param open_multi: False is radio；True is multiple choice
         """
-        keywords = self.factory.model.name
-        if keywords[-1] == '）':
-            keywords = keywords[:keywords.index('（')]
-        popup = SearchWindow(self, keywords, multi_mode=open_multi)
+        popup = SearchWindow(self, self.factory, multi_mode=open_multi)
         popup.exec()
         modelvals = popup.get_selected_models
         assert len(modelvals)
@@ -262,14 +259,14 @@ class MainWindow(QMainWindow):
         if self.assist_window.isVisible():
             self.assist_window.hide()
         else:
-            self.assist_window.display_info(self.factory.model)
+            self.assist_window.display_info(self.factory)
             self.assist_window.show()
 
     def management_database(self):
         """
         Popup of manage data.
         """
-        manager = DatePanel(self)
+        manager = DatePanel(self, self.factory)
         manager.exec()
 
     def change_gender(self):
@@ -306,9 +303,9 @@ class MainWindow(QMainWindow):
         Rewrite the window close event.
         """
         if self.warning("退出前确认是否保存。\n确认退出？\n"):
-            del self.assist_window
-            self.factory.close()
             write_cache_model(self.factory.model.value)
+            self.factory.close()
+            del self.assist_window
             event.accept()
         else:
             event.ignore()

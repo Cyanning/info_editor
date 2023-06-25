@@ -1,14 +1,15 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
-import model.bodyfactory as factory
+from model.bodyfactory import BodyFactory
 from configuration import (
     GENDERS, UI_FONTSIZE, UI_FONTFAMILY, SYSTEMS
 )
 
 
 class SearchWindow(QDialog):
-    def __init__(self, parent: QWidget, init_keyword: str, multi_mode=False):
+    def __init__(self, parent: QWidget, factory: BodyFactory, multi_mode=False):
         super().__init__(parent)
+        self.factory = factory
         self.resize(500, 700)
         self.setWindowTitle("搜索模型")
         # Search input
@@ -48,8 +49,6 @@ class SearchWindow(QDialog):
 
         self.setLayout(layout)
         self._style()
-        self.search_text.setText(init_keyword)
-        self.search_model()
 
     def _style(self):
         font = self.font()
@@ -76,7 +75,7 @@ class SearchWindow(QDialog):
         # Search and display
         self.result.clear()
         self.result_list.clear()
-        self.result = [*factory.produce_by_search(keystring, keysysid)]
+        self.result = [*self.factory.produce_by_search(keystring, keysysid)]
         for _model in self.result:
             _listitem = QListWidgetItem()
             _listitem.setIcon(QIcon(GENDERS[_model.gender]))
