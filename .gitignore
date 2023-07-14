@@ -3,6 +3,6 @@
 /dist
 /info_editor.spec
 /window_icon.ico
-/cache/creature.db-shm
-/cache/creature.db-wal
-/cache/periousValue.txt
+/resource/creature.db-shm
+/resource/creature.db-wal
+/resource/periousValue.txt

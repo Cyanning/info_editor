@@ -1,3 +1,4 @@
+# 常量
 SYSTEMS = [
     '全部系统',
     '骨骼系统',
@@ -13,9 +14,9 @@ SYSTEMS = [
     '泌尿生殖系统',
     '皮肤'
 ]
-GENDERS = ("./cache/male.png", "./cache/female.png")
-DATABASE_PATH = "./cache/creature.db"
-WINDOW_ICON_PATH = "./cache/icon.png"
-VALUE_PATH = "./cache/periousValue.txt"
+GENDERS = ("./resource/male.png", "./resource/female.png")
+DATABASE_PATH = "resource/creature.db"
+WINDOW_ICON_PATH = "resource/icon.png"
+VALUE_PATH = "resource/periousValue.txt"
 UI_FONTFAMILY = "Microsoft YaHei UI"
 UI_FONTSIZE = 11

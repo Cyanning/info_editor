@@ -3,7 +3,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 from model.bodyfactory import BodyFactory
 from configuration import (
-    UI_FONTSIZE, UI_FONTFAMILY
+    UI_FONTSIZE, UI_FONTFAMILY, WINDOW_ICON_PATH
 )
 
 
@@ -14,7 +14,7 @@ class DisplayWindow(QWidget):
         super().__init__(None)
         self.main_window = main_window
         self.setWindowTitle("原信息")
-        self.setWindowIcon(QIcon("./cache/icon.png"))
+        self.setWindowIcon(QIcon(WINDOW_ICON_PATH))
         self.lab = QLabel()
         self.browser = QTextBrowser(self)
         layout = QVBoxLayout()
