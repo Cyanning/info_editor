@@ -6,7 +6,7 @@ from interface.search import SearchWindow
 from interface.display import DisplayWindow
 from interface.datapanel import DatePanel
 from interface.interface_widget import InterfaceWidgets
-from model.bodyfactory import BodyFactory, write_cache_model, load_cache_model
+from factory.bodyfactory import BodyFactory, write_cache_model, load_cache_model
 from configuration import (
     WINDOW_ICON_PATH, UI_FONTFAMILY, UI_FONTSIZE, GENDERS
 )

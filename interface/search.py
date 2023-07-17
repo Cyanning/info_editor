@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
-from model.bodyfactory import BodyFactory
+from factory.bodyfactory import BodyFactory
 from configuration import (
     GENDERS, UI_FONTSIZE, UI_FONTFAMILY, SYSTEMS
 )
@@ -79,7 +79,7 @@ class SearchWindow(QDialog):
         for _model in self.result:
             _listitem = QListWidgetItem()
             _listitem.setIcon(QIcon(GENDERS[_model.gender()]))
-            _listitem.setText(f"{_model.value_} {_model.name}")
+            _listitem.setText(f"{_model.value_()} {_model.name}")
             self.result_list.addItem(_listitem)
 
     @property

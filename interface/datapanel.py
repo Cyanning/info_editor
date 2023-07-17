@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
-from model.bodyfactory import BodyFactory
+from factory.bodyfactory import BodyFactory
 from configuration import (
     UI_FONTFAMILY, UI_FONTSIZE, SYSTEMS, GENDERS
 )
