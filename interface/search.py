@@ -78,7 +78,7 @@ class SearchWindow(QDialog):
         self.result = [*self.factory.produce_by_search(keystring, keysysid)]
         for _model in self.result:
             _listitem = QListWidgetItem()
-            _listitem.setIcon(QIcon(GENDERS[_model.gender]))
+            _listitem.setIcon(QIcon(GENDERS[_model.gender()]))
             _listitem.setText(f"{_model.value_} {_model.name}")
             self.result_list.addItem(_listitem)
 

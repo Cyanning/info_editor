@@ -1,11 +1,10 @@
 from model.sentence import Sentence
+from model.structure import Structure
 
 
-class BodyModel:
+class BodyModel(Structure):
     def __init__(self, value: int, name: str, context=None):
-        super().__init__()
-        self.value = int(value)
-        self.name = name
+        super().__init__(value, name)
         self._paragraph = ""
         if context is not None:
             self._sentences = [Sentence(x) for x in context]
@@ -30,32 +29,6 @@ class BodyModel:
     @property
     def paragraph(self):
         return self._paragraph
-
-    @property
-    def gender(self) -> int:
-        if self.value >= 1000000:
-            val = self.value // 10000
-        else:
-            val = self.value // 1000
-        val %= 10
-        return val
-
-    @property
-    def sysid(self) -> int:
-        if self.value >= 1000000:
-            val = self.value // 100000
-        else:
-            val = self.value // 10000
-        val -= 10
-        return val
-
-    @property
-    def value_(self):
-        if self.value < 1000000:
-            val = "%d " % self.value
-        else:
-            val = str(self.value)
-        return val
 
     @paragraph.setter
     def paragraph(self, text):

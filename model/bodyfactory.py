@@ -31,17 +31,6 @@ def load_cache_model():
 class BodyFactory:
     def __init__(self):
         self.db = sqlite3.connect(DATABASE_PATH)
-        self.model = BodyModel(100000, "")
-
-    @classmethod
-    def create(cls):
-        obj = cls()
-        init_value = load_cache_model()
-        if init_value is None:
-            obj.setup_model()
-        else:
-            obj.setup_model(init_value)
-        return obj
 
     def close(self):
         self.db.close()
@@ -70,7 +59,7 @@ class BodyFactory:
         # Objective model
         return BodyModel(value, name, sentences)
 
-    def setup_model(self, value: int = None, direction: int = 0):
+    def setup_model(self, value: int, direction: int = 0):
         """
         Generate previous, next, first, first within the bounds system.
         If the value passed in is not in the database,
@@ -79,40 +68,37 @@ class BodyFactory:
         :param direction: next 1; previous -1; jump 0
         :return BodyModel Object
         """
-        if value is None:
-            value = self.model.value
-
         assert 100000 <= value < 212000 or 1000000 <= value < 2120000
 
-        if direction == 0:
-            try:
-                self.model = self.create_by_value(value)
-                return
-            except AssertionError:
-                pass
-
-        cur = self.db.cursor()
-        cur.execute(f"SELECT value FROM info ORDER BY sysid,value")
-        values = [x[0] for x in cur.fetchall()]
-        if value in values:
-            idx = values.index(value) + direction
-            idx %= len(values)  # Make sure the index is in range
-            self.model = self.create_by_value(values[idx])
-        else:
-            values.sort()  # Sorted from largest to smallest
-            maxidx = len(values)
-            minidx = 0
-            # Dichotomy query the value with the smallest difference
-            while maxidx - minidx > 1:
-                mididx = (maxidx - minidx) // 2 + minidx
-                if values[mididx] > value:
-                    maxidx = mididx
-                else:
-                    minidx = mididx
-            if value - values[minidx] < values[maxidx] - value:
-                self.model = self.create_by_value(values[minidx])
+        if direction == 1 or direction == -1:
+            cur = self.db.cursor()
+            cur.execute(f"SELECT value FROM info ORDER BY sysid,value")
+            values = [x[0] for x in cur.fetchall()]
+            if value in values:
+                idx = values.index(value) + direction
+                idx %= len(values)  # Make sure the index is in range
+                final_val = values[idx]
             else:
-                self.model = self.create_by_value(values[maxidx])
+                values.sort()  # Sorted from largest to smallest
+                maxidx = len(values)
+                minidx = 0
+                # Dichotomy query the value with the smallest difference
+                while maxidx - minidx > 1:
+                    mididx = (maxidx - minidx) // 2 + minidx
+                    if values[mididx] > value:
+                        maxidx = mididx
+                    else:
+                        minidx = mididx
+                if value - values[minidx] < values[maxidx] - value:
+                    final_val = values[minidx]
+                else:
+                    final_val = values[maxidx]
+        elif direction == 0:
+            final_val = value
+        else:
+            raise ValueError
+
+        return self.create_by_value(final_val)
 
     def produce_by_search(self, kws: str, sysid: int | None) -> Generator[BodyModel]:
         """
@@ -140,17 +126,6 @@ class BodyFactory:
                 yield Sentence(cur.fetchone()[0])
             except TypeError:
                 continue
-
-    def saving_current_model(self):
-        """
-        Save all relationships of a model base on paragraph attribute of model.
-        According to the assertion, it is judged to be blank content, and all sentences are deleted.
-        """
-        try:
-            self.model.convert_into_sentences()
-        except AssertionError:
-            self.model.clean_sentences()
-        self.saving_model(self.model)
 
     def saving_model(self, body: BodyModel):
         """
@@ -196,12 +171,12 @@ class BodyFactory:
         )
         self.db.commit()
 
-    def get_old_info(self) -> str:
+    def get_old_info(self, value: int) -> str:
         """
         Get old version information.
         """
         cur = self.db.cursor()
-        cur.execute("SELECT info FROM info WHERE value=%d" % self.model.value)
+        cur.execute("SELECT info FROM info WHERE value=%d" % value)
         context = cur.fetchone()
         try:
             context = context[0]
