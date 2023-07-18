@@ -22,7 +22,6 @@ class DatePanel(QDialog):
 
         self.export_data = QPushButton("导出数据")
         self.import_data = QPushButton("导入数据")
-        self.export_lost = QPushButton("导出未录数据")
 
         layout0 = QHBoxLayout()
         layout0.addWidget(self.system_list)
@@ -38,7 +37,6 @@ class DatePanel(QDialog):
         layout2 = QHBoxLayout()
         layout2.addWidget(self.export_data)
         layout2.addWidget(self.import_data)
-        layout2.addWidget(self.export_lost)
         layout2.setContentsMargins(0, 10, 0, 0)
 
         layout_ = QVBoxLayout()
@@ -80,9 +78,6 @@ class DatePanel(QDialog):
         self.import_data.setFont(font)
         self.import_data.clicked.connect(self.import_database)
 
-        self.export_lost.setFont(font)
-        self.export_lost.clicked.connect(self.export_undone)
-
     @property
     def current_sysid(self):
         sysid = self.system_list.currentIndex()
@@ -122,12 +117,3 @@ class DatePanel(QDialog):
                 QMessageBox().information(self, "Good", "；\n".join(contents) + '。')
         except Exception as e:
             QMessageBox().critical(self, "Error", f"导入数据发生错误。\n错误原因：{e}")
-
-    def export_undone(self):
-        try:
-            filepath = QFileDialog(self).getExistingDirectory(self, "选择存储路径")
-            if len(filepath):
-                self.factory.export_undone_model(filepath, self.current_sysid, self.current_gender)
-                QMessageBox().information(self, "Good", "导出成功！")
-        except Exception as e:
-            QMessageBox().critical(self, "Error", f"导出数据发生错误。\n错误原因：\n{e}")

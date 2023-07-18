@@ -236,25 +236,6 @@ class BodyFactory:
             _export(key)
         return tables
 
-    def export_undone_model(self, _path, sysid: int | None, gender: int | None):
-        """
-        Export the models id which hadn't new content.
-        """
-        condition = ""
-        if sysid is not None:
-            condition += f" AND sysid={sysid}"
-        if gender is not None:
-            condition += f" AND sex={gender}"
-
-        cur = self.db.cursor()
-        cur.execute(
-            "SELECT info.value FROM info LEFT OUTER JOIN ia_connect ON info.value = ia_connect.model_value "
-            "WHERE ia_connect.model_value IS NULL" + condition
-        )
-        values = (str(row[0]) for row in cur.fetchall())
-        with open(_path + "未完成id.txt", 'w', encoding='UTF-8') as f:
-            f.write("\n".join(values))
-
     def import_database_from_json(self, _path) -> dict:
         """
         Import database from json file.
