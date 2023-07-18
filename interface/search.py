@@ -7,7 +7,7 @@ from configuration import (
 
 
 class SearchWindow(QDialog):
-    def __init__(self, parent: QWidget, factory: BodyFactory, multi_mode=False):
+    def __init__(self, parent: QWidget, factory: BodyFactory, multi_mode: bool):
         super().__init__(parent)
         self.factory = factory
         self.resize(500, 700)
@@ -17,10 +17,12 @@ class SearchWindow(QDialog):
         # Search button
         self.search_push = QPushButton("搜索", self)
         self.search_push.clicked.connect(self.search_model)
-        # System filter
+        # Filter by system
         self.system_list = QComboBox(self)
         self.system_list.addItems(SYSTEMS)
-        self.system_list.currentIndexChanged.connect(self.search_model)
+        # Filter which had be edited
+        self.mode_list = QComboBox(self)
+        self.mode_list.addItems(["全部", "无信息的", "有信息的"])
         # Modle list of result and list widget of result
         self.result = []
         self.result_list = QListWidget(self)
@@ -34,17 +36,21 @@ class SearchWindow(QDialog):
         self.sure_push = QPushButton("选好了", self)
         self.sure_push.clicked.connect(self.accept)
 
-        top = QHBoxLayout()
-        top.addWidget(self.search_text)
-        top.addWidget(self.search_push)
+        row1 = QHBoxLayout()
+        row1.addWidget(self.system_list)
+        row1.addWidget(self.mode_list)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(self.search_text)
+        row2.addWidget(self.search_push)
 
         bottom = QVBoxLayout()
-        bottom.addWidget(self.system_list)
         bottom.addWidget(self.result_list)
         bottom.addWidget(self.sure_push)
 
         layout = QVBoxLayout()
-        layout.addLayout(top)
+        layout.addLayout(row1)
+        layout.addLayout(row2)
         layout.addLayout(bottom)
 
         self.setLayout(layout)
@@ -58,31 +64,34 @@ class SearchWindow(QDialog):
         self.search_text.setFont(font)
         self.search_push.setFont(font)
         self.system_list.setFont(font)
+        self.mode_list.setFont(font)
         self.sure_push.setFont(font)
 
         font.setFamily("黑体")
         self.result_list.setFont(font)
 
     def search_model(self):
+        # Keywords
         keystring = self.search_text.text()
         keystring = keystring.strip()
-        if not len(keystring):
-            QMessageBox().warning(self, "警告", "请输入有效内容")
-            return
+
         # System serial number
         keysysid = self.system_list.currentIndex()
         keysysid = keysysid - 1 if keysysid else None
+
+        # Filter mode number
+        keyfiltermode = self.mode_list.currentIndex()
+
         # Search and display
         self.result.clear()
         self.result_list.clear()
-        self.result = [*self.factory.produce_by_search(keystring, keysysid)]
+        self.result = [*self.factory.produce_by_search(keystring, keysysid, keyfiltermode)]
         for _model in self.result:
             _listitem = QListWidgetItem()
             _listitem.setIcon(QIcon(GENDERS[_model.gender()]))
             _listitem.setText(f"{_model.value_()} {_model.name}")
             self.result_list.addItem(_listitem)
 
-    @property
     def get_selected_models(self):
         idxes = [idx.row() for idx in self.result_list.selectedIndexes()]
         values = [self.result[i].value for i in idxes]

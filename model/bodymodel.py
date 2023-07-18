@@ -3,13 +3,13 @@ from model.structure import Structure
 
 
 class BodyModel(Structure):
-    def __init__(self, value: int, name: str, context=None):
+    def __init__(self, value: int, name: str, context: list | None):
         super().__init__()
         self.value = value
         self.name = name
         self._paragraph = ""
         if context is not None:
-            self._sentences = [Sentence(x) for x in context]
+            self._sentences = context
             self.convert_for_paragraph()
 
     def __iter__(self):

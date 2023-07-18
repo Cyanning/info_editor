@@ -5,7 +5,6 @@ from interface.preview import PreviewWindow
 from interface.search import SearchWindow
 from interface.display import DisplayWindow
 from interface.datapanel import DatePanel
-from interface.interface_widget import InterfaceWidgets
 from factory.bodyfactory import BodyFactory, write_cache_model, load_cache_model
 from configuration import (
     WINDOW_ICON_PATH, UI_FONTFAMILY, UI_FONTSIZE, GENDERS
@@ -28,24 +27,25 @@ class MainWindow(QMainWindow):
         self.assist_window = DisplayWindow(self)
 
         # UI widgets
-        self.widgets = InterfaceWidgets(
+        self.widgets = {}
+        self.widget_keys = [
             ['modelid', 'name', 'export', 'save'],
             ['jump', 'pervious', 'next', 'search'],
             ['info', 'sentence'],
             ['addoldinfo', 'addinfo', 'split', 'assignment']
-        )
+        ]
         self.__add_widgets()
 
         # Set fonts,focus policy
         font = QFont(UI_FONTFAMILY, UI_FONTSIZE)
-        for key, widget in self.widgets.iter_widgets():
+        for key, widget in self.widgets.items():
             widget.setFont(font)
             if key != "gender_icon":
                 widget.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         # Layout
         main_layout = QVBoxLayout()
-        for i, row in self.widgets.iter_keywords():
+        for row in self.widget_keys:
             row_layout = QHBoxLayout()
             for kw in row:
                 row_layout.addWidget(self.widgets[kw])
@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
         if value is None:
             value = 100000
         self.factory = BodyFactory()
-        self.model = self.factory.create_by_value(value)
+        self.body = self.factory.create_by_value(value)
         self.load_model()
 
     def __add_widgets(self):
@@ -135,10 +135,10 @@ class MainWindow(QMainWindow):
         """
         Load model data.
         """
-        self.widgets['gender_icon'].setIcon(QIcon(GENDERS[self.model.gender()]))
-        self.widgets['name'].setText(self.model.name)
-        self.widgets['modelid'].setValue(self.model.value)
-        self.widgets['info'].setPlainText(self.model.paragraph)
+        self.widgets['gender_icon'].setIcon(QIcon(GENDERS[self.body.gender()]))
+        self.widgets['name'].setText(self.body.name)
+        self.widgets['modelid'].setValue(self.body.value)
+        self.widgets['info'].setPlainText(self.body.paragraph)
         self.display_sentences_list()
 
     def display_sentences_list(self):
@@ -146,23 +146,23 @@ class MainWindow(QMainWindow):
         Show sentence list.
         """
         self.widgets['sentence'].clear()
-        for i, item in enumerate(self.model, start=1):
+        for i, item in enumerate(self.body, start=1):
             self.widgets['sentence'].addItem(f"{i}. {item.value}")
 
     def previous_model(self):
-        self.model = self.factory.setup_model(self.model.value, direction=-1)
+        self.body = self.factory.setup_model(self.body.value, direction=-1)
         self.load_model()
 
     def next_model(self):
-        self.model = self.factory.setup_model(self.model.value, direction=1)
+        self.body = self.factory.setup_model(self.body.value, direction=1)
         self.load_model()
 
     def jump_model(self):
         try:
             value = self.widgets['modelid'].value()
-            self.model = self.factory.setup_model(value=value)
+            self.body = self.factory.setup_model(value=value)
             self.load_model()
-        except AssertionError:
+        except ValueError:
             QMessageBox().warning(self, "警告", "Id 格式错误。")
 
     def specify_model_from_search(self):
@@ -170,8 +170,8 @@ class MainWindow(QMainWindow):
         Search model and jump.
         """
         try:
-            modelvals = self.search_model()
-            self.model = self.factory.setup_model(value=modelvals)
+            modelvals = self.search_model_single()
+            self.body = self.factory.setup_model(value=modelvals)
             self.load_model()
         except AssertionError:
             pass
@@ -182,18 +182,18 @@ class MainWindow(QMainWindow):
         """
         if self.warning("确定以当前所填内容保存吗？"):
             try:
-                self.model.paragraph = self.widgets['info'].toPlainText()
-                if len(self.model.paragraph) == 0:
-                    self.model.clean_sentences()
+                self.body.paragraph = self.widgets['info'].toPlainText()
+                if len(self.body.paragraph) == 0:
+                    self.body.clean_sentences()
                 else:
-                    self.model.convert_into_sentences()
+                    self.body.convert_into_sentences()
             except Exception as e:
                 QMessageBox().critical(self, "错误", f"保存信息发生错误。\n错误原因：\n{e}")
             else:
                 QMessageBox().information(self, "Good", "保存成功！")
-                write_cache_model(self.model.value)
+                write_cache_model(self.body.value)
             finally:
-                self.model = self.factory.setup_model(value=self.model.value)
+                self.body = self.factory.setup_model(value=self.body.value)
                 self.load_model()
 
     def add_sentences_from_search(self):
@@ -201,10 +201,10 @@ class MainWindow(QMainWindow):
         Add sentences, information from database.
         """
         try:
-            value = self.search_model()
+            value = self.search_model_single()
             sentences = self.factory.produce_sentences_by_value(value)
-            self.model.add_into_paragraph(sentences)
-            self.widgets['info'].appendPlainText(self.model.paragraph)
+            self.body.add_into_paragraph(sentences)
+            self.widgets['info'].appendPlainText(self.body.paragraph)
         except AssertionError:
             QMessageBox().warning(self, "警告", "没有信息可以被添加。")
         except Exception as e:
@@ -215,8 +215,8 @@ class MainWindow(QMainWindow):
         Split sentences.
         """
         try:
-            self.model.paragraph = self.widgets['info'].toPlainText()
-            self.model.convert_into_sentences()
+            self.body.paragraph = self.widgets['info'].toPlainText()
+            self.body.convert_into_sentences()
             self.display_sentences_list()
         except AssertionError:
             QMessageBox().critical(self, "错误", f"内容为空白。")
@@ -227,10 +227,10 @@ class MainWindow(QMainWindow):
         """
         try:
             # 获取句子对象
-            sentences = [self.model[i.row()] for i in self.widgets['sentence'].selectedIndexes()]
+            sentences = [self.body[i.row()] for i in self.widgets['sentence'].selectedIndexes()]
             assert len(sentences) > 0
             # 将句子关联到选中的模型中
-            modelvals = self.search_model(True)
+            modelvals = self.search_model_multi()
             models = []
             for item in modelvals:
                 model_item = self.factory.create_by_value(item)
@@ -248,16 +248,25 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox().critical(self, "错误", f"添加句子发生错误。\n错误原因：\n{e}")
 
-    def search_model(self, open_multi: bool = False):
+    def search_model_single(self):
         """
-        Common callback method of search window.
-        :param open_multi: False is radio；True is multiple choice
+        Common callback method of search window with single select.
         """
-        popup = SearchWindow(self, self.factory, multi_mode=open_multi)
+        popup = SearchWindow(self, self.factory, multi_mode=False)
         popup.exec()
-        modelvals = popup.get_selected_models
+        modelvals = popup.get_selected_models()
         assert len(modelvals)
-        return modelvals if open_multi else modelvals[0]
+        return modelvals[0]
+
+    def search_model_multi(self):
+        """
+        Common callback method of search window with multi select.
+        """
+        popup = SearchWindow(self, self.factory, multi_mode=True)
+        popup.exec()
+        modelvals = popup.get_selected_models()
+        assert len(modelvals)
+        return modelvals
 
     def show_oldinfo_context(self):
         """
@@ -266,7 +275,7 @@ class MainWindow(QMainWindow):
         if self.assist_window.isVisible():
             self.assist_window.hide()
         else:
-            self.assist_window.display_info(self.factory)
+            self.assist_window.display_info(self.factory, self.body)
             self.assist_window.show()
 
     def management_database(self):
@@ -280,9 +289,9 @@ class MainWindow(QMainWindow):
         """
         Change opposite gender with same name.
         """
-        for model_res in self.factory.produce_by_search(self.model.name, None):
-            if model_res.name == self.model.name and model_res.gender != self.model.gender():
-                self.model = self.factory.setup_model(value=model_res.value)
+        for model_res in self.factory.produce_by_search(self.body.name, None, 0):
+            if model_res.name == self.body.name and model_res.gender() != self.body.gender():
+                self.body = self.factory.create_by_value(model_res.value)
                 self.load_model()
                 break
 
@@ -310,7 +319,7 @@ class MainWindow(QMainWindow):
         Rewrite the window close event.
         """
         if self.warning("退出前确认是否保存。\n确认退出？\n"):
-            write_cache_model(self.model.value)
+            write_cache_model(self.body.value)
             self.factory.close()
             del self.assist_window
             event.accept()

@@ -44,7 +44,7 @@ class BodyFactory:
         cur.execute("SELECT name FROM info WHERE value=%d" % value)
         res = cur.fetchone()
         assert res is not None
-        # Seek all sentence's hash
+        # Seek all sentence's hash with order
         name = res[0]
         cur.execute("SELECT text_hash FROM ia_connect WHERE model_value=%d ORDER BY order_id" % value)
         sentence_hashes = [x[0] for x in cur.fetchall()]
@@ -53,7 +53,7 @@ class BodyFactory:
         for sentence_hash in sentence_hashes:
             cur.execute("SELECT context FROM attribution WHERE text_hash='%s'" % sentence_hash)
             try:
-                sentences.append(cur.fetchone()[0])
+                sentences.append(Sentence(cur.fetchone()[0]))
             except (TypeError, IndexError):
                 continue
         # Objective model
@@ -68,51 +68,80 @@ class BodyFactory:
         :param direction: next 1; previous -1; jump 0
         :return BodyModel Object
         """
-        assert 100000 <= value < 212000 or 1000000 <= value < 2120000
+        if not (100000 <= value < 212000 or 1000000 <= value < 2120000):
+            raise ValueError
 
-        if direction == 1 or direction == -1:
-            cur = self.db.cursor()
-            cur.execute(f"SELECT value FROM info ORDER BY sysid,value")
-            values = [x[0] for x in cur.fetchall()]
-            if value in values:
-                idx = values.index(value) + direction
-                idx %= len(values)  # Make sure the index is in range
-                final_val = values[idx]
-            else:
-                values.sort()  # Sorted from largest to smallest
-                maxidx = len(values)
-                minidx = 0
-                # Dichotomy query the value with the smallest difference
-                while maxidx - minidx > 1:
-                    mididx = (maxidx - minidx) // 2 + minidx
-                    if values[mididx] > value:
-                        maxidx = mididx
-                    else:
-                        minidx = mididx
-                if value - values[minidx] < values[maxidx] - value:
-                    final_val = values[minidx]
-                else:
-                    final_val = values[maxidx]
+        cur = self.db.cursor()
+        cur.execute(f"SELECT value FROM info ORDER BY sysid,value")
+        values = [x[0] for x in cur.fetchall()]
+        if value in values:
+            idx = values.index(value) + direction
+            idx %= len(values)  # Make sure the index is in range
+            final_val = values[idx]
         elif direction == 0:
-            final_val = value
+            values.sort()  # Adjust order
+            maxidx = len(values)
+            minidx = 0
+            # Dichotomy query the value with the smallest difference
+            while maxidx - minidx > 1:
+                mididx = (maxidx - minidx) // 2 + minidx
+                if values[mididx] > value:
+                    maxidx = mididx
+                else:
+                    minidx = mididx
+
+            if value - values[minidx] < values[maxidx] - value:
+                final_val = values[minidx]
+            else:
+                final_val = values[maxidx]
         else:
             raise ValueError
 
         return self.create_by_value(final_val)
 
-    def produce_by_search(self, kws: str, sysid: int | None) -> Generator[BodyModel]:
+    def produce_by_search(self, keywords: str, sysid: int | None, filter_model: int) -> Generator[BodyModel]:
         """
         According to keywords and system restrictions, search and generate models without sentence information.
+        filter_model: 0 - all, 1 - hadn't info, 2 - had info
         """
         cur = self.db.cursor()
-        sql = "SELECT value,name FROM info WHERE name LIKE '%{}%' OR info LIKE '%{}%' OR value LIKE '%{}%'".format(
-            kws, kws, kws
-        )
+        sql = "SELECT value,name FROM info AS i "
+        conditions = []
+        if filter_model:
+            sql += "LEFT JOIN ia_connect AS c ON i.value=c.model_value "
+            if filter_model == 1:
+                conditions.append("c.model_value IS NULL")
+            elif filter_model == 2:
+                conditions.append("c.model_value IS NOT NULL")
+            else:
+                raise ValueError("Param filter_model error")
+
         if sysid is not None:
-            sql += f" AND sysid={sysid}"
-        cur.execute(sql)
-        for val, name in cur.fetchall():
-            yield BodyModel(val, name)
+            conditions.append(f"i.sysid={sysid}")
+
+        num_limit = 1000
+        if len(keywords) > 0:
+            keywords = f"%{keywords}%"
+            conditions.append("i.name LIKE ?")
+            cur.execute(f"{sql}WHERE {' AND '.join(conditions)} LIMIT {num_limit}", (keywords,))
+            sql_result = list(cur.fetchall())
+            number_supplement = num_limit - len(sql_result)
+            if number_supplement > 0:
+                conditions[-1] = "i.name NOT LIKE ?"
+                conditions.append("i.info LIKE ?")
+                cur.execute(f"{sql}WHERE {' AND '.join(conditions)} LIMIT {number_supplement}", (keywords, keywords))
+                sql_result.extend(cur.fetchall())
+
+        elif len(conditions) > 0:
+            cur.execute(f"{sql}WHERE {' AND '.join(conditions)} LIMIT {num_limit}")
+            sql_result = list(cur.fetchall())
+
+        else:
+            cur.execute(f"{sql}LIMIT {num_limit}")
+            sql_result = list(cur.fetchall())
+
+        for val, name in sql_result:
+            yield BodyModel(val, name, None)
 
     def produce_sentences_by_value(self, value: int) -> list[Sentence]:
         """

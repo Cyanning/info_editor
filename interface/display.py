@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt
 from factory.bodyfactory import BodyFactory
+from model.bodymodel import BodyModel
 from configuration import (
     UI_FONTSIZE, UI_FONTFAMILY, WINDOW_ICON_PATH
 )
@@ -34,13 +35,13 @@ class DisplayWindow(QWidget):
         self.browser.setFont(font)
         self.browser.setFrameShape(QFrame(self.browser).frameShape().WinPanel)
 
-    def display_info(self, factory: BodyFactory):
+    def display_info(self, factory: BodyFactory, body: BodyModel):
         self.resize(self.__width, self.main_window.height())
         self.move(self.main_window.x() - self.__width, self.main_window.y())
         self.browser.clear()
-        self.lab.setText(factory.model.name)
+        self.lab.setText(body.name)
         try:
-            context = factory.get_old_info()
+            context = factory.get_old_info(body.value)
         except AssertionError:
             self.browser.setText('')
         else:

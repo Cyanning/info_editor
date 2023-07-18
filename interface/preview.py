@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from factory.bodyfactory import BodyModel
 from configuration import (
     UI_FONTFAMILY, UI_FONTSIZE
@@ -19,9 +20,7 @@ class PreviewWindow(QDialog):
         # Widget directly hosted by the scroll area and Table layout for textbox
         widget = QWidget(scroll)
         gbox = QGridLayout(widget)
-        font = self.font()
-        font.setPointSize(UI_FONTSIZE)
-        font.setFamily(UI_FONTFAMILY)
+        font = QFont(UI_FONTFAMILY, UI_FONTSIZE)
         # Put four text boxes per row
         for i in range(0, len(models)):
             textarea = QLabel()
