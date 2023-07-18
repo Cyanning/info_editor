@@ -1,16 +1,8 @@
 class Structure:
-    def __init__(self):
-        self.value = 1
-        self.name = ""
-        self.pval = 0
-
-    @classmethod
-    def create(cls, value: int, name: str, pval: int):
-        creature = cls()
-        creature.value = value
-        creature.name = name
-        creature.pval = pval
-        return creature
+    def __init__(self, value: int, name: str, pval: int):
+        self.value = value
+        self.name = name
+        self.pval = pval
 
     def gender(self) -> int:
         if self.value < 1000000:

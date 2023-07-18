@@ -205,7 +205,7 @@ class BodyFactory:
         Get old version information.
         """
         cur = self.db.cursor()
-        cur.execute("SELECT info FROM info WHERE value=%d" % value)
+        cur.execute("SELECT info FROM info_old_info WHERE value=%d" % value)
         context = cur.fetchone()
         try:
             context = context[0]

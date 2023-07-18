@@ -19,5 +19,28 @@ class InfoFactory:
         )
         self.db.commit()
 
+    def generate_new_value(self, sysid: int, is_parent: int, sex: int):
+        cur = self.db.cursor()
+        cur.execute(
+            "SELECT value FROM info WHERE sysid=? AND is_parent=? AND sex=? ORDER BY value",
+            (sysid, is_parent, sex)
+        )
+        if is_parent:
+            startnum = (sysid + 10) * 10000 + sex * 1000 + 1
+        else:
+            startnum = (sysid + 10) * 100000 + sex * 10000
+        for val, in cur.fetchall():
+            if startnum == val:
+                startnum += 1
+            else:
+                break
+        return startnum
+
     def close(self):
         self.db.close()
+
+
+if __name__ == '__main__':
+    t = InfoFactory()
+    t.close()
+    print(t.generate_new_value(0, 0, 0))

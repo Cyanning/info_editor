@@ -4,9 +4,7 @@ from model.structure import Structure
 
 class BodyModel(Structure):
     def __init__(self, value: int, name: str, context: list | None):
-        super().__init__()
-        self.value = value
-        self.name = name
+        super().__init__(value, name, 0)
         self._paragraph = ""
         if context is not None:
             self._sentences = context
