@@ -4,6 +4,9 @@ class Structure:
         self.name = name
         self.pval = pval
 
+    def __repr__(self):
+        return "( {} | {} | {} )".format(self.value, self.name, self.pval)
+
     def gender(self) -> int:
         if self.value < 1000000:
             val = self.value // 1000
