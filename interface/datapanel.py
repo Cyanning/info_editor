@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import *
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon
+from PySide6.QtWidgets import *
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 from factory.bodyfactory import BodyFactory
 from configuration import (
     UI_FONTFAMILY, UI_FONTSIZE, SYSTEMS, GENDERS
@@ -15,9 +15,9 @@ class DatePanel(QDialog):
         self.setMinimumWidth(int(parent.width() / 2))
 
         self.system_list = QComboBox(self)
-        self.gender_boxes = [QCheckBox(), QCheckBox()]
+        self.gender_boxes = [QCheckBox(self), QCheckBox(self)]
 
-        self.lab = QLabel("当前完成度：")
+        self.lab = QLabel(self, "当前完成度：")
         self.progress_bar = QProgressBar(self)
 
         self.export_data = QPushButton("导出数据")

@@ -14,7 +14,7 @@ class BodyModel(Structure):
         return self._sentences.__iter__()
 
     def __getitem__(self, item):
-        if not type(item) == int and abs(item) < len(self._sentences):
+        if not isinstance(item, int) and abs(item) < len(self._sentences):
             raise IndexError
         return self._sentences[item]
 
@@ -35,7 +35,7 @@ class BodyModel(Structure):
         """
         Assign directly to the paragraph.
         """
-        if type(text) == str:
+        if isinstance(text, str):
             self._paragraph = text.strip()
 
     def clean_sentences(self):
@@ -50,7 +50,7 @@ class BodyModel(Structure):
         add text from the sentence object to the paragraph;
         if context is a string, connect the content directly after the paragraph.
         """
-        if type(context) == str:
+        if isinstance(context, str):
             self._paragraph += f"\n{context.strip()}"
         else:
             for new in context:
