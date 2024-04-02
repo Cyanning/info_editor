@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import *
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PySide6.QtWidgets import *
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from factory.bodyfactory import BodyModel
 from configuration import (
     UI_FONTFAMILY, UI_FONTSIZE

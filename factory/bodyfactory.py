@@ -167,7 +167,7 @@ class BodyFactory:
         idxes_excluded = set()
 
         # Loop through each sentence
-        for idx_now, sentence in enumerate(body):
+        for idx_now, sentence in enumerate(body.sentences):
             hash_now = sentence.gethash
             # Determine whether the relationship already exists
             if hash_now in hash_exists:
@@ -242,8 +242,14 @@ class BodyFactory:
         Returns a dictionary consisting of imported data volumes.
         e.q:{table_name: number}
         """
-        tables_count = {"attribution": 0, "ia_connect": 0}
-        table_unique_fields = {"attribution": ["text_hash", "context"], "ia_connect": ["model_value", "text_hash"]}
+        tables_count = {
+            "attribution": 0,
+            "ia_connect": 0
+        }
+        table_unique_fields = {
+            "attribution": ["text_hash", "context"],
+            "ia_connect": ["model_value", "text_hash"]
+        }
 
         def _insert(name):
             with open(f"{_path}/{name}.json", "r", encoding="UTF-8") as f:

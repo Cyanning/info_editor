@@ -17,7 +17,7 @@ class DatePanel(QDialog):
         self.system_list = QComboBox(self)
         self.gender_boxes = [QCheckBox(self), QCheckBox(self)]
 
-        self.lab = QLabel(self, "当前完成度：")
+        self.lab = QLabel("当前完成度：", parent=self)
         self.progress_bar = QProgressBar(self)
 
         self.export_data = QPushButton("导出数据")

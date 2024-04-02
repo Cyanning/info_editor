@@ -3,32 +3,31 @@ from model.structure import Structure
 
 
 class BodyModel(Structure):
-    def __init__(self, value: int, name: str, context: list | None):
+    def __init__(self, value: int, name: str, context: list = None):
         super().__init__(value, name, 0)
-        self._paragraph = ""
+        self.paragraph: str = ""
+        self.sentences: list[Sentence] = []
         if context is not None:
-            self._sentences = context
-            self.convert_for_paragraph()
-
-    def __iter__(self):
-        return self._sentences.__iter__()
+            self.sentences = [Sentence(_str_) for _str_ in context]
+            self.convert_forparagraph()
 
     def __getitem__(self, item):
-        if not isinstance(item, int) and abs(item) < len(self._sentences):
+        if not isinstance(item, int) and abs(item) < len(self.sentences):
             raise IndexError
-        return self._sentences[item]
+        return self.sentences[item]
 
     def __len__(self):
-        return len(self._sentences)
+        return len(self.sentences)
 
     def __contains__(self, item):
-        if type(item) is not Sentence:
+        if isinstance(item, Sentence):
+            return any((x == item for x in self.sentences))
+        else:
             raise ValueError
-        return any((x == item for x in self._sentences))
 
     @property
     def paragraph(self):
-        return self._paragraph
+        return self.paragraph
 
     @paragraph.setter
     def paragraph(self, text):
@@ -36,67 +35,67 @@ class BodyModel(Structure):
         Assign directly to the paragraph.
         """
         if isinstance(text, str):
-            self._paragraph = text.strip()
+            self.paragraph = text.strip()
 
-    def clean_sentences(self):
+    def cleansentences(self):
         """
         Clean up the sentence list.
         """
-        self._sentences.clear()
+        self.sentences.clear()
 
-    def add_into_paragraph(self, context):
+    def add_intoparagraph(self, context):
         """
         If context is an iterable object containing a sentence object,
         add text from the sentence object to the paragraph;
         if context is a string, connect the content directly after the paragraph.
         """
         if isinstance(context, str):
-            self._paragraph += f"\n{context.strip()}"
+            self.paragraph += f"\n{context.strip()}"
         else:
             for new in context:
-                if new.value not in self._paragraph:
-                    self._paragraph += f"\n{new.value}。\n"
+                if new.value not in self.paragraph:
+                    self.paragraph += f"\n{new.value}。\n"
 
-    def add_into_sentences(self, context):
+    def add_intosentences(self, context):
         """
         Add multiple sentence objects.
         """
         for new in context:
-            for old in self._sentences:
+            for old in self.sentences:
                 if new == old:
                     break
             else:
-                self._sentences.append(new)
+                self.sentences.append(new)
 
-    def convert_for_paragraph(self):
+    def convert_forparagraph(self):
         """
         Convert sentences of a list of sentences into paragraphs.
         """
-        if len(self._sentences):
-            self._paragraph = "。\n\n".join([x.value for x in self._sentences])
-            self._paragraph += "。"
+        if len(self.sentences):
+            self.paragraph = "。\n\n".join([x.value for x in self.sentences])
+            self.paragraph += "。"
         else:
-            self._paragraph = ''
+            self.paragraph = ''
 
-    def convert_into_sentences(self):
+    def convert_intosentences(self):
         """
         Split the paragraph into a list of sentences, the list of sentences will be reset!!!
         """
-        length = len(self._paragraph)
+        length = len(self.paragraph)
         assert length
-        self._sentences = []
+        self.sentences = []
         # The timing of breaking out of the loop takes advantage of the fact that the find function returns -1
         left = 0
         right = 0
         while left < length and right >= 0:
             # Obtain the cut-off point in the string from the starting point to the end
-            right = self._paragraph.find('。\n', left)
+            right = self.paragraph.find('。\n', left)
             try:
-                text = Sentence(self._paragraph[left:right])
+                text = Sentence(self.paragraph[left:right])
             except ValueError:
                 # Skip empty strings, but do not affect the starting point forward
                 pass
             else:
-                self._sentences.append(text)
+                self.sentences.append(text)
             finally:
                 left = right + 1
